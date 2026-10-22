@@ -17,11 +17,13 @@
   number of trucks/containers needed to transport a set of goods with limited
   weight/volume capacity. Maps 1:1 onto the generic MILP from the project brief
   (items = boxes; bins = trucks with capacity C).
-- **Dataset (Kaggle):** [Pick and Place Binning Dataset](https://www.kaggle.com/datasets/panavraaj/pick-and-place-binning-dataset)
-  — synthetic bin packing instances (JSON) with `objects` (item sizes), `bins`
-  (capacities) and precomputed `greedy_sequence`/`greedy_cost` baselines, at 6 sizes
-  (3/5/10/40/100/200 objects). **MIT license** · v2 · ~188 MB · usability 7.5.
-  Compatible with the one-dimensional BPP formulation in the project brief.
+- **Dataset (chosen — tentative):** [Supply Chain Logistics Optimization Dataset](https://www.kaggle.com/datasets/omarstat2/supply-chain-logistics-data)
+  (Brunel University London research data) — `OrderList` with **9,215 real customer
+  orders** (weights, units, shipping dates, ports); BPP mapping: items = order
+  lines, `w_i` = order weight, bins = trucks/containers, `C` from the freight
+  weight brackets (`FreightRates`). Details in `DATASETS.md` §1. **Tentative — may
+  be swapped; revisit Phase 2 if so.** Fallback: the Pick and Place Binning Dataset
+  (synthetic, greedy baselines) remains the tuned-on reference benchmark.
 - **Real-dataset candidates per use case:** see [`DATASETS.md`](./DATASETS.md)
   (researched Oct 2026). Recommended hybrid: tune on the synthetic instances, then
   validate on a preprocessed real set (e.g., ENEM questions or Azure VM packing
@@ -59,6 +61,11 @@ Lanes are independent; **sync points** are the milestones M1 (intermediate prese
 - [ ] Draft `report/01-introducao.md` + `report/02-modelagem.md` skeleton referencing the review (Oct 28 – Nov 3, runs in parallel with Phase 3's modeling by A1)
 
 ### Phase 2 — Dataset acquisition from Kaggle (Oct 21–28) — *A3*
+
+> **Note (dataset switch):** the chosen dataset is now the Supply Chain Logistics
+> Optimization Dataset (tentative — see §1). The steps below still describe the
+> previous Pick and Place pipeline; parser/bucketing details will be rewritten
+> once the dataset choice is confirmed.
 - [ ] Download via Kaggle API / MCP tools: `tools.kaggle.download_dataset` for `panavraaj/pick-and-place-binning-dataset` (Oct 21–23)
 - [ ] Parse to normalized BPP instance format (list of `w_i` + capacity `C`); sanity: `C ≥ max(w_i)` (Oct 21–23)
 - [ ] Record provenance + license in `data/README.md` (Oct 21–23)

@@ -27,33 +27,18 @@ capacity. This maps 1:1 onto the generic BPP MILP from the assignment brief
 
 $$\min \sum_{j \in J} y_j \quad \text{s.t.} \quad \sum_{j} x_{ij} = 1 \;\; \forall i, \qquad \sum_{i} w_i x_{ij} \le C y_j \;\; \forall j$$
 
-**Dataset:** [Pick and Place Binning Dataset](https://www.kaggle.com/datasets/panavraaj/pick-and-place-binning-dataset)
-(Haggle/Kaggle, MIT license) — synthetic BPP instances at 6 sizes (3–200 items) with
-greedy baselines; see [`DATASETS.md`](./DATASETS.md) for the research and the
-planned real-dataset validation candidates.
+**Dataset (provisional choice):** [Supply Chain Logistics Optimization Dataset](https://www.kaggle.com/datasets/omarstat2/supply-chain-logistics-data)
+(Brunel University London research data) — 9,215 real customer orders with weights,
+units and shipping dates; BPP mapping: items = order lines, `w_i` = order weight,
+bins = trucks/containers with capacity `C` set by the freight weight brackets.
+**Tentative — we may switch datasets later.** Research and alternatives:
+[`DATASETS.md`](./DATASETS.md).
 
-## Deliverables & grading
+## Assignment & schedule
 
-| Component | Points |
-|---|---|
-| Mathematical modeling (NM) | 3 |
-| Implementation (NI) — 2 solver + 2 alternative method | 4 |
-| Report (NR) — ABNT/IEEE | 3 |
-| Presentation (NA), individual | 1 |
-| Self & peer assessment (NAAP), individual | 1 |
-
-`NT = (NM + NI + NR) · min{NA, NAAP}` — plagiarized/duplicated work receives **zero**,
-hence this repository is **private**.
-
-## Key dates
-
-| Milestone | Date | Status |
-|---|---|---|
-| Kickoff / scenario lock | Oct 21, 2026 | done |
-| **Presentation 1 (intermediate)** | **Nov 16, 2026** | confirmed |
-| Final delivery (e-disciplinas) | **Dec 12, 2026** | placeholder — TBC |
-
-Full plan, per-actor lanes (A1–A5), and Gantt chart: [`TODO.md`](./TODO.md).
+Requirements, grading breakdown, and dates are specified in the official assignment
+(`Projeto_PM_BCC_2026.pdf` — kept locally, not tracked in this repository) and in the
+work plan [`TODO.md`](./TODO.md).
 
 ## Repository layout (planned)
 

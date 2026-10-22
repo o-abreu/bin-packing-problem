@@ -10,8 +10,13 @@ The five use cases named in the brief were used as keywords: **(1)**
 carga/veículos · **(2)** consolidação de VMs · **(3)** backup/arquivamento ·
 **(4)** armários de laboratório · **(5)** diagramação de provas.
 
-Fit legend: 🟢 strong (1:1 mapping, real data) · 🟡 moderate (needs
-preprocessing/derivation) · 🔴 weak (illustrative only).
+**Fit legend:**
+
+🟢 strong (1:1 mapping, real data)
+
+🟡 moderate (needs preprocessing/derivation)
+
+🔴 weak (illustrative only).
 
 ---
 
