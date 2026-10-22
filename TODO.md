@@ -161,11 +161,11 @@ gantt
     section Phase 7 — Report
     Sections 1–2 (early draft)       :a2, 2026-10-28, 6d
     Sections 3–4 (results)           :crit, a2, 2026-11-11, 2d
-    Section 5 & full revision        :a1, 2026-11-13, 1d
+    Report §5 & full revision        :a1, 2026-11-13, 1d
 
     section Phase 8 — Delivery
     Milestone M1 — Presentation 1    :milestone, 2026-11-16, 0d
-    Buffer: reruns & polish          :2026-11-17, 23d
+    Buffer — reruns & polish         :2026-11-17, 23d
     Presentation 2 & NAAP prep       :m2, 2026-12-10, 1d
     Package (buffer)                 :crit, 2026-12-10, 2d
     Milestone M2 — Review & submit   :crit, milestone, 2026-12-12, 0d
