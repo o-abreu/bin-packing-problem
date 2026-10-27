@@ -66,13 +66,13 @@ uma baseline de entrada, **não** variável nem restrição do modelo.
 
 ## Função objetivo
 
-$$\min \sum_{j \in J}\sum_{k \in K}\big(f_k\, y_{jk} + R_k\, q_{jk}\big) \tag{FO}$$
+$$\min \sum_{j \in J}\sum_{k \in K}\big(f_k\ y_{jk} + R_k\ q_{jk}\big) \tag{FO}$$
 
 Cada reserva aberta na classe $k$ paga o **máximo** entre o mínimo da classe e o
 custo por peso do seu carregamento:
 
-$$f_k\,y_{jk} + R_k\,q_{jk} \;=\; \max\big(f_k\,y_{jk},\ R_k\,W_j\big),
-\qquad W_j = \sum_{i \in I} w_i\,x_{ij},$$
+$$f_k\ y_{jk} + R_k\ q_{jk} \ =\  \max\big(f_k\ y_{jk},\ R_k\ W_j\big),
+\qquad W_j = \sum_{i \in I} w_i\ x_{ij},$$
 
 que é exatamente a tarifa do dataset (Fig. 3 do paper companheiro
 @dzalbs2020): o `rate` $R_k$ incide sobre o **peso total** do embarque e o
@@ -88,7 +88,7 @@ Três observações sobre o custo:
 2. A epígrafe R6 (abaixo) é o que lineariza o $\max$: sem ela, o modelo seria
    não linear em $W_j$.
 3. Somando sobre as reservas, a parcela por peso é
-   $\sum_{j} R_{k(j)}\,W_j = \sum_{k} R_k\,W_k$ — depende apenas do **peso
+   $\sum_{j} R_{k(j)}\ W_j = \sum_{k} R_k\ W_k$ — depende apenas do **peso
    total alocado a cada classe**, não de como esse peso é repartido entre
    reservas. Quem induz juntar pedidos continua sendo a taxa fixa $f_k$; a
    tarifa $R_k$ induz escolher a classe de menor custo por kg para cada carga.
@@ -102,14 +102,14 @@ barata — sem precisar listá-la de forma exaustiva a priori.
 
 **R1 — Atribuição completa dos pedidos.**
 
-$$\sum_{j \in J} x_{ij} = 1 \;\; \forall i \in I \tag{R1}$$
+$$\sum_{j \in J} x_{ij} = 1 \ \  \forall i \in I \tag{R1}$$
 
 Todo pedido embarca em **exatamente uma** reserva: itens são indivisíveis, e
 nenhum pedido pode ficar de fora ou ser duplicado.
 
 **R2 — Capacidade da classe (teto do bracket).**
 
-$$\sum_{i \in I} w_i\, x_{ij} \;\le\; \sum_{k \in K} C_k\, y_{jk} \;\; \forall j \in J \tag{R2}$$
+$$\sum_{i \in I} w_i\ x_{ij} \ \le\  \sum_{k \in K} C_k\ y_{jk} \ \  \forall j \in J \tag{R2}$$
 
 O peso total carregado na reserva $j$ não pode exceder o teto $C_k$ da classe
 faturada: a reserva fica limitada pela capacidade da classe efetivamente
@@ -118,7 +118,7 @@ para todo $k$), o lado direito é zero e a reserva não pode carregar nada.
 
 **R3 — Casamento de faixa (piso do bracket).**
 
-$$\sum_{i \in I} w_i\, x_{ij} \;\ge\; \sum_{k \in K} l_k\, y_{jk} \;\; \forall j \in J \tag{R3}$$
+$$\sum_{i \in I} w_i\ x_{ij} \ \ge\  \sum_{k \in K} l_k\ y_{jk} \ \  \forall j \in J \tag{R3}$$
 
 Uma reserva não pode ser faturada mais barata do que a sua carga real: se a
 classe $k$ é a faturada, o peso alocado deve alcançar o piso $l_k$ do bracket. É
@@ -128,7 +128,7 @@ preço-por-kg não monotônicos [@dzalbs2020].
 
 **R4 — Uma classe por reserva.**
 
-$$\sum_{k \in K} y_{jk} \le 1 \;\; \forall j \in J \tag{R4}$$
+$$\sum_{k \in K} y_{jk} \le 1 \ \  \forall j \in J \tag{R4}$$
 
 Cada reserva é faturada sob **no máximo uma** classe: o bracket tarifário é
 selecionado pelo peso total do carregamento na reserva; não é possível
@@ -136,7 +136,7 @@ selecionado pelo peso total do carregamento na reserva; não é possível
 
 **R5 — Nenhum item em reserva fechada.**
 
-$$x_{ij} \;\le\; \sum_{k \in K} y_{jk} \;\; \forall i \in I,\ j \in J \tag{R5}$$
+$$x_{ij} \ \le\  \sum_{k \in K} y_{jk} \ \  \forall i \in I,\ j \in J \tag{R5}$$
 
 Um pedido só pode embarcar numa reserva que tenha **alguma** classe faturada:
 reservas fechadas ficam vazias por construção. Com R4, o somatório do lado
@@ -145,13 +145,13 @@ de $j$.
 
 **R6 — Custo por peso com piso no mínimo da classe (epígrafe).**
 
-$$q_{jk} \;\ge\; W_j - \beta_k\, y_{jk} - M\,(1 - y_{jk})
+$$q_{jk} \ \ge\  W_j - \beta_k\ y_{jk} - M\ (1 - y_{jk})
 \quad \forall j \in J,\ k \in K,\qquad M = \max_{k \in K} C_k \tag{R6}$$
 
 Se $y_{jk} = 1$, R6 força $q_{jk} \ge W_j - \beta_k$ e, como $q_{jk}$ só aparece
 com coeficiente $R_k > 0$ no objetivo, o ótimo toma
 $q_{jk} = \max(0,\ W_j - \beta_k)$ — a reserva paga $f_k$ quando
-$W_j \le \beta_k$, e $R_k\,W_j$ caso contrário. Se $y_{jk} = 0$, o lado direito
+$W_j \le \beta_k$, e $R_k\ W_j$ caso contrário. Se $y_{jk} = 0$, o lado direito
 é $W_j - M \le 0$, logo $q_{jk} = 0$ no ótimo. Por R2, $W_j \le C_k$ na classe
 aberta, de modo que $M = \max_k C_k \ge \max_j W_j$ e a linearização é **exata**
 — não é um big-M frouxo.
@@ -165,9 +165,9 @@ tarifária exige.
 De forma compacta, o modelo de otimização inteira mista é:
 
 $$
-\min \sum_{j \in J}\sum_{k \in K}\big(f_k\, y_{jk} + R_k\, q_{jk}\big)
+\min \sum_{j \in J}\sum_{k \in K}\big(f_k\ y_{jk} + R_k\ q_{jk}\big)
 \quad \text{s.a.} \quad \text{R1–R6,}
-\quad x_{ij},\, y_{jk} \in \{0,1\},\ q_{jk} \ge 0.
+\quad x_{ij},\ y_{jk} \in \{0,1\},\ q_{jk} \ge 0.
 $$
 
 com $(I, K, J)$, $w_i$ e $(C_k, l_k, f_k)$ conforme declarado nas subseções

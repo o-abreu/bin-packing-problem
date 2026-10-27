@@ -152,7 +152,7 @@ has `nbclient`/`nbformat` because quarto's kernel runner needs them.
   $\max(f_k,\ R_k W_j)$ linearized by the epigraph R6
   ($q_{jk} \ge W_j - \beta_k y_{jk} - M(1-y_{jk})$, $M=\max_k C_k$,
   $\beta_k=f_k/R_k$) — with constraints R1–R6 as stated in
-  `report/sections/modelagem-matematica.qmd`.
+  `report/sections/modelagem-matematica.md`.
 - **PuLP in the venv is 4.2.x**: `LpVariable.dicts`, `PULP_CBC_CMD` and
   `pulp.LpStatus` **no longer exist**. Use
   `m.add_variable_dicts(name, (idx0, idx1), cat="Binary")` (nested dicts,

@@ -94,7 +94,7 @@ carrier, `orig_port_cd`, `dest_port_cd`, `svc_cd`, `minm_wgh_qty`,
 - $J = \{1,\dots,n\}$: slots candidatos de reserva — nenhuma rota precisa de
   mais reservas do que pedidos.
 
-{{< include sections/modelagem-matematica.qmd >}}
+{{< include sections/modelagem-matematica.md >}}
 
 # Experimento
 
