@@ -1,0 +1,10 @@
+# Python deps for the bin-packing analysis (managed by devenv venv)
+pandas           # tabular data handling
+numpy            # numerics (weights, bounds)
+matplotlib       # figures for the report
+pyarrow          # fast parquet/csv IO
+ipykernel        # jupyter kernel for Quarto documents
+nbclient         # notebook execution engine used by `quarto render`
+nbformat         # notebook file format (nbclient dependency)
+pulp             # MILP modeling (bundled CBC backend)
+highspy          # HiGHS solver API (kept for scaling experiments)

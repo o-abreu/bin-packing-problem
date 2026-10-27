@@ -1,0 +1,5 @@
+/.quarto/
+
+# artefatos de preview (HTML + libs geradas pelo Quarto)
+*.html
+*_files/

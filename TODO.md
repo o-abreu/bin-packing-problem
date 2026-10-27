@@ -1,191 +1,181 @@
-# Bin Packing Problem (BPP) — Project Plan
-**Disciplina:** SME 0110 – Programação Matemática · **Prazo:** Oct 21 → **Nov 16, 2026 (Presentation 1)** · **Dec 12, 2026 (final delivery — placeholder, TBC)**
-**Description source:** [`Projeto_PM_BCC_2026.pdf`](./Projeto_PM_BCC_2026.pdf) / [`Projeto_PM_BCC_2026.md`](./Projeto_PM_BCC_2026.md)
+# TODO — Plano de Trabalho
 
-> **Objective:** model & solve the Bin Packing Problem for one real-world application
-> using a commercial solver (**Gurobi**), a free solver (**SCIP**), and one alternative
-> method (heuristic FFD/BFD or meta-heuristic), producing a technical report
-> (ABNT/IEEE) and two presentations. Deliverables: code + instances + PDF report in a
-> single archive on e-disciplinas. Grading: NM 3 · NI 4 · NR 3 · NA 1 · NAAP 1,
-> `NT = (NM + NI + NR) · min{NA, NAAP}`. **Plagiarized/duplicated work → zero.**
+Plano por fases derivado do enunciado do curso [`Projeto_PM_BCC_2026.md`](./Projeto_PM_BCC_2026.md)
+e anotado com as decisões já tomadas neste repositório (ver
+[`DATASETS.md`](./DATASETS.md) e o esqueleto [`report.qmd`](./report.qmd)).
+Consulte este arquivo antes de começar o trabalho; anote a qual fase uma
+mudança pertence nas mensagens de commit.
+
+**Recapitulativo dos entregáveis (do enunciado):** duas implementações (modelo
+exato com solver + método alternativo, Python 3), relatório técnico (IEEE, via
+`report.qmd`), duas apresentações no semestre e um arquivo único
+(.zip/.tar.gz) com código + dados de instâncias + PDF do relatório no
+e-disciplinas.
+
+**Avaliação:** NM 3 (modelagem) · NI 4 (2 solvers + 2 métodos alternativos) ·
+NR 3 (relatório) · NA 1 (apresentação, individual) · NAAP 1 (avaliação por
+pares/própria). Final: $NT = (NM + NI + NR)\cdot\min\{NA, NAAP\}$.
+
+**Pendências de logística do grupo (enunciado §2):** confirmar membros do
+grupo (4–5) e registrar o grupo no e-disciplinas antes do prazo.
+Responsável: **TODO (grupo)**.
 
 ---
 
-## 1. Scenario choice (deliberation)
+## Fase 0 — Escolha do problema & dados ✅ (quase completa)
 
-- **Chosen application:** *Alocação de Cargas em Veículos / Contêineres* — minimize the
-  number of trucks/containers needed to transport a set of goods with limited
-  weight/volume capacity. Maps 1:1 onto the generic MILP from the project brief
-  (items = boxes; bins = trucks with capacity C).
-- **Dataset (chosen — tentative):** [Supply Chain Logistics Optimization Dataset](https://www.kaggle.com/datasets/omarstat2/supply-chain-logistics-data)
-  (Brunel University London research data) — `OrderList` with **9,215 real customer
-  orders** (weights, units, shipping dates, ports); BPP mapping: items = order
-  lines, `w_i` = order weight, bins = trucks/containers, `C` from the freight
-  weight brackets (`FreightRates`). Details in `DATASETS.md` §1. **Tentative — may
-  be swapped; revisit Phase 2 if so.** Fallback: the Pick and Place Binning Dataset
-  (synthetic, greedy baselines) remains the tuned-on reference benchmark.
-- **Real-dataset candidates per use case:** see [`DATASETS.md`](./DATASETS.md)
-  (researched Oct 2026). Recommended hybrid: tune on the synthetic instances, then
-  validate on a preprocessed real set (e.g., ENEM questions or Azure VM packing
-  requests) — a real-data story the report can present honestly.
+- [x] Escolher o cenário de aplicação (enunciado §3.1): **empacotamento de
+      reservas de frete em rotas logísticas reais** — o caso de uso
+      "Alocação de Cargas", estendido à variante de custo variável (VSBPP)
+      que o enunciado permite explicitamente ("minimizar o custo/desperdício
+      total").
+- [x] Pesquisar e commitar datasets reais (`data/raw/`, do Kaggle
+      `omarstat2/supply-chain-logistics-data` via o espelho
+      `Eden1029/SQL_SupplyChainLogistics`); documentar proveniência e esquema
+      em [`DATASETS.md`](./DATASETS.md).
+- [x] Verificar fatos do dataset (contagens de linhas, cargas por rota,
+      transportadora `V44_3` sem tarifas, brackets cotados em lb, pedidos de
+      peso zero) — ver fatos dos dados em [`DATASETS.md`](./DATASETS.md);
+      não rederive.
+- [x] Verificar semântica de faturamento + níveis de serviço contra o paper
+      companheiro do repositório de origem (Dzalbs & Kalganova 2020, Fig. 3):
+      tarifa $=\max(R\,w,\ f)$ ($R$ = `rate` por kg sobre a **totalidade** do
+      peso do carregamento, `minimum cost` = piso de custo) e níveis de
+      serviço DTD/DTP/CRF (CRF = frete contratado pelo cliente, $tc = 0$)
+      cobrados nos pedidos como *atributo de requisito*. Consequências:
+      instâncias escopadas por **(rota × nível de serviço)**; pedidos CRF
+      **excluídos** das instâncias de empacotamento (não reatribuídos a
+      reservas tarifadas). Registrado em [`DATASETS.md`](./DATASETS.md);
+      não rederive.
 
-## 2. Actors (5 independent lanes)
+## Fase 1 — Bibliografia & introdução ✅ / (entradas do bib pendentes de consolidação)
 
-| Actor | Role | Primary deliverables |
-|---|---|---|
-| **A1 — Lead & Modeling** | Coordination; MILP formulation, symmetry-breaking constraints, lower bounds (L1/L2) | `model.tex` (Set/Params/Vars/Objective/Constraints), bound module |
-| **A2 — Literature & Report** | Asta-backed literature review (ABNT/IEEE), report drafting against the 5 mandated sections | `refs.bib`, `relatorio.pdf` sections 1–2, 5 |
-| **A3 — Data Engineering** | Kaggle dataset acquisition, parser to standard BPP format, instance buckets (small/medium/large), experiment harness | `data/` instances, `harness.py` |
-| **A4 — Exact Solvers** | Gurobi (commercial) + SCIP (free) implementations, tuning, result logging | `solver_gurobi.py`, `solver_scip.py`, `results_exact.json` |
-| **A5 — Alternative Methods** | FFD/BFD heuristics + one meta-heuristic (SA or Tabu); quality analysis vs optimum/LB | `heuristics.py`, `results_heur.json` |
+- [x] Referências centrais de BPP/VSBPP verificadas e no `refs.bib`
+      (Karp 1972; Garey & Johnson 1979; Friesen & Langston 1986 — **não**
+      "Friesen & Kuo"; Kang 2003; Coffman 1997; citação do dataset).
+- [ ] Consolidar os links de fontes do DATASETS.md em entradas citáveis no
+      `refs.bib` / prosa do relatório (nota de proveniência ao fim do
+      [`DATASETS.md`](./DATASETS.md)). *(referências da "Fase 1" deste
+      arquivo)*
+- [ ] Escrever a **Introdução** completa (enunciado §4.1): contexto de
+      consolidação de frete, relevância industrial, breve revisão da
+      literatura com citações ABNT/IEEE. Substituir o placeholder de bloco de
+      autores no `report.qmd`.
 
-Lanes are independent; **sync points** are the milestones M1 (intermediate presentation, Nov 16) and M2 (final delivery, Dec 12 — placeholder, TBC).
+## Fase 2 — Modelagem & engenharia de instâncias (enunciado §3.1, NM)
 
-## 3. Work breakdown (checkbox plan)
+- [x] Modelo declarado no `report.qmd`: conjuntos ($I$, $K$, $J$), variáveis
+      ($x_{ij}$, $y_{jk}$), objetivo $\min \sum_{j,k} f_k y_{jk}$, restrições
+      R1–R5 (atribuição, teto do bracket, casamento de faixa, uma classe por
+      reserva, nenhum item em reserva fechada).
+- [ ] Validar o modelo contra a formulação base genérica do enunciado
+      (recuperável com $f_k \equiv 1$) e documentar o que foi generalizado
+      (classes, carga mínima faturada, objetivo de custo).
+- [ ] **Engenharia de instâncias:** construir o conjunto experimental completo:
+  - [ ] Instâncias escopadas por **(rota × nível de serviço)** — apenas
+        pacotes tarifados: `PORT04→PORT09`×DTP (6.184 pedidos),
+        `PORT04→PORT09`×DTD (2.143), `PORT09→PORT09`×DTP (34). Pedidos CRF
+        (854) são **excluídos** (frete contratado pelo cliente, $tc = 0$);
+        `PORT05→PORT09` não tem instância tarifada.
+  - [ ] Dentro de um pacote tarifado, manter o recorte por cliente das
+        instâncias grandes (ex.: lotes de clientes de `PORT04→PORT09`×DTP)
+        com compressão de linhas idêntica.
+  - [ ] Baldes de tamanho recalculados nos limites das novas instâncias:
+        pequena (≤ ~30 itens) exata sem limite de tempo, média (≤ 60) exata
+        com limite de tempo, grandes (milhares) apenas heurística.
+  - [ ] Persistir as definições de instância (rota, nível de serviço,
+        cliente, seed) para que toda execução seja reproduzível.
+- [ ] Finalização do pré-processamento: normalização lb→kg (verificar a
+      robustez da detecção de brackets em lb), escopo de classes por
+      (rota × svc) antes do filtro de classes dominadas, exclusão de pedidos
+      CRF, etapa de pós-atribuição de pedidos de peso zero (só pedidos
+      tarifados).
 
-### Phase 0 — Setup & kickoff (Oct 21–22, starts TODAY) — *All / A4*
-- [ ] Kickoff meeting TODAY (Oct 21): confirm scenario, register group on e-disciplinas (A1)
-- [ ] Env setup: Python venv/devenv; `gurobipy` (academic license), `PySCIPOpt` + SCIP binary — **parallel to everything else (A4)**
-- [ ] Repo scaffold: `data/`, `src/`, `report/`, `work/` (A1)
-- [ ] Freeze per-actor sub-plans on Oct 22, no re-planning later (A1)
+## Fase 3 — Soluções exatas (enunciado §3.1 / §4.3, NI-1)
 
-### Phase 1 — Literature research with Asta (Oct 21–30) — *A2 (+A1)*
-- [ ] Query `asta literature find` + Asta Paper Finder for BPP surveys & formulations (Oct 21–26)
-- [ ] Pin canon via Asta `semantic-scholar` lookups (Oct 27–28):
-    - Coffman, Garey & Johnson (1997), "Approximation Algorithms for Bin Packing: A Survey"
-    - Johnson (1973) & Dósa (2007) — tight bound FFD ≤ (11/9)·OPT + 6/9
-    - Martello & Toth (1990), L1/L2 lower bounds
-    - Gilmore & Gomory (1961) — column-generation alternative formulation
-    - Wäscher, Haußner & Schumann (2007) — cutting & packing typology
-- [ ] Collect 8–12 cited sources → `refs.bib` (ABNT or IEEE) (Oct 28–30)
-- [ ] Draft `report/01-introducao.md` + `report/02-modelagem.md` skeleton referencing the review (Oct 28 – Nov 3, runs in parallel with Phase 3's modeling by A1)
+- [x] PuLP + CBC embutido ponta a ponta em uma instância pequena (no
+      `report.qmd`).
+- [ ] Segundo solver: resolver as mesmas instâncias com **HiGHS** (`highspy`,
+      já instalado) e/ou interface SCIP do PuLP — parear com o requisito do
+      enunciado "um comercial + um gratuito":
+  - [ ] tentar/negociar licença acadêmica do Gurobi e, se indisponível,
+        documentar a substituição junto ao professor;
+  - [ ] caso contrário, a comparação é CBC vs HiGHS (ambos acessíveis via
+        PuLP).
+- [ ] Coleta das quatro métricas de solver exigidas para **toda** instância
+      (enunciado §4.3): status da solução (ótima/factível/infactível), valor
+      da função objetivo, tempo de processamento, gap de otimalidade %
+      (solução inteira vs bound LP).
+- [ ] Tabela de análise comparativa solver-vs-solver + discussão.
+- [ ] Experimentos de escala em instâncias maiores (HiGHS; limites de tempo +
+      regras de aceitação de gap fixadas aqui).
 
-### Phase 2 — Dataset acquisition from Kaggle (Oct 21–28) — *A3*
+## Fase 4 — Método alternativo (enunciado §3.2 / §4.4, NI-2)
 
-> **Note (dataset switch):** the chosen dataset is now the Supply Chain Logistics
-> Optimization Dataset (tentative — see §1). The steps below still describe the
-> previous Pick and Place pipeline; parser/bucketing details will be rewritten
-> once the dataset choice is confirmed.
-- [ ] Download via Kaggle API / MCP tools: `tools.kaggle.download_dataset` for `panavraaj/pick-and-place-binning-dataset` (Oct 21–23)
-- [ ] Parse to normalized BPP instance format (list of `w_i` + capacity `C`); sanity: `C ≥ max(w_i)` (Oct 21–23)
-- [ ] Record provenance + license in `data/README.md` (Oct 21–23)
-- [ ] Split into buckets: toy (3–10), medium (40), large (100–200, **large is heuristic-only** vs compressed timeline) (Oct 26–28)
-- [ ] For the real-instance validation set: preprocess chosen real dataset per `DATASETS.md` §6 (Oct 26–28) — synthetic tuning first, real validation after
+- [x] Heurística FFD de baseline em uma instância pequena (`ffd_baseline` no
+      `report.qmd`) com lower bound baseado em peso (LB estilo L2).
+- [ ] Estender a heurística da contagem simples de reservas para o **objetivo
+      de custo**: FFD/BFD respeitando brackets de peso e o mínimo da faixa,
+      em ordem de capacidade crescente.
+- [ ] Benchmark heurística vs soluções exatas em todas as instâncias da
+      Fase 2, mais comparação puramente heurística nos baldes grandes (gap
+      para o bound LP).
+- [ ] Escolher ≥ uma meta-heurística para instâncias grandes (Simulated
+      Annealing ou Tabu é ideal para movimentos de vizinhança no VSBPP:
+      relocate/swap/downgrade de classe). Justificar a escolha com referências
+      teóricas adicionadas ao `refs.bib` (DOIs verificados — não invente
+      nada).
 
-### Phase 3 — Mathematical modeling & model validation (Oct 26–30) — *A1*
-- [ ] Adapt generic model from the brief: min ∑y_j; s.t. ∑_j x_ij = 1 ∀i; ∑_i w_i x_ij ≤ C·y_j ∀j; x,y ∈ {0,1} (Oct 26–28)
-- [ ] Add strengthening: symmetry-breaking `y_j ≥ y_{j+1}`; tighter big-M (C replaced by max useful load) (Oct 26–28)
-- [ ] Implement LB modules: L1 = ⌈∑ w_i / C⌉; L2 (Martello–Toth) (Oct 28–29)
-- [ ] Validate toy instances vs. Kaggle `greedy_cost` baselines & L1/L2 (Oct 30); freeze `model.tex` — **critical handoff to A4**
+## Fase 5 — Relatório & análise (enunciado §4, NR)
 
-### Phase 4 — Exact solvers (Oct 30 – Nov 7) — *A4*
-- [ ] Gurobi prototype on toy bucket; validate optima agree with L1/L2 bounds & Kaggle greedy baselines (Oct 30 – Nov 4)
-- [ ] SCIP equivalent; log per run: status, objective, runtime, optimality gap (Nov 5–6)
-- [ ] Parity check Gurobi ↔ SCIP on toy bucket (Nov 7)
-- [ ] Produce `results_exact.json` for toy+medium buckets (Nov 7)
-- [ ] Scope guardrail: **no per-solver deep tuning** (MIPFocus sweep, seed studies) — single sensible configuration only
+Um `report.qmd` (IEEE, `pdflatex`, Quarto 1.6.43 travado), escrito em
+**pt-BR** (como toda a documentação do repositório), ordem estrita de seções
+do enunciado:
 
-### Phase 5 — Alternative methods (Oct 30 – Nov 7) — *A5*
-- [ ] Implement FFD + BFD as documented in Coffman et al.; test on toy bucket (expect ≤ optimum+1) (Oct 30 – Nov 3)
-- [ ] Implement **one** meta-heuristic — recommended: Simulated Annealing over item ordering + First-Fit decode (Nov 4–6)
-- [ ] Compare quality vs MILP optima & LB on toy/medium buckets (Nov 7)
-- [ ] Produce `results_heur.json` for **all** buckets (large included — heuristics scale fine) (Nov 7)
-- [ ] Scope guardrail: **no parameter sweeps** — fixed sensible SA schedule; drop Tabu variants
+- [ ] §1 Introdução — narrativa + citações.
+- [ ] §2 Modelagem Matemática — conjuntos/parâmetros/variáveis formais +
+      raciocínio por trás de cada restrição (R1–R5).
+- [ ] §3 Solução via _Solvers_ — implementação e as quatro métricas
+      (status, objetivo, tempo, gap); discussão comparativa entre solvers.
+      Esta seção e qualquer saída de análise (plots, tabelas) ficam na forma
+      de notebook renderizada por `devenv shell -- render-report`.
+- [ ] §4 Método de Solução Alternativo — justificativa, implementação,
+      resultados, comparação crítica solver-vs-heurística e discussão de
+      aplicabilidade.
+- [ ] §5 Conclusão — valor para logística/indústria, trabalhos futuros
+      (capacidades variáveis — já é o núcleo do nosso modelo!, restrições
+      2D/3D, métodos híbridos), reflexão sobre aprendizados/desafios.
+- [ ] Preencher os TODOs de título e bloco de autores.
+- [ ] Re-renderizar o `report.qmd` ponta a ponta após cada mudança de Quarto
+      ou texlive (pacote LaTeX faltando → adicionar exatamente aquele em
+      `texlive.withPackages` no `devenv.nix`, conforme `AGENTS.md`; módulo
+      Python faltando → `requirements.txt`).
 
-### Phase 6 — Benchmarking & analysis (Nov 3–11) — *A3 (+A4, A5)*
-- [ ] Harness in `harness.py`: deterministic single seed + time limit; one CSV row per (solver × method × instance) (Nov 3–4)
-- [ ] Run matrix: {Gurobi, SCIP, FFD, BFD, SA} × {toy, medium, large} — **primary seed, fixed time limit** (Nov 10)
-- [ ] `analyze-data` pass on results CSV for status/obj/time/gap tables (Nov 10–11)
-- [ ] Scope guardrail: reruns with a second seed are the **buffer activity** — only if the spine is still on schedule by Nov 13
+## Fase 6 — Apresentações (NA)
 
-### Phase 7 — Report drafting (Oct 28 – Nov 13) — *A2 (+A1)*
-- [ ] Sections 1–2 (introduction + mathematical modeling) drafted **early** from literature + `model.tex` (Oct 28 – Nov 5)
-- [ ] Section 3 (solver results & comparison) from `results_exact.json` (Nov 11–12)
-- [ ] Section 4 (alternative method & critical analysis) from `results_heur.json` (Nov 11–12)
-- [ ] Section 5 (conclusion, future work: 2D/3D, heterogeneous bins, hybrid) (Nov 13)
-- [ ] LaTeX → PDF; similarity check (plagiarism → zero rule) (Nov 13)
+- [ ] **Primeira apresentação (início do semestre):** problema, modelo,
+      resultados atuais.
+- [ ] **Apresentação final:** resultados completos, comparações, conclusões.
+- [ ] Slides derivados do relatório; sucintos, só rascunhos de resultados
+      completos.
 
-### Phase 8 — Deliverables (Nov 16 / Dec 10–12) — *All*
-- [ ] **M1: intermediate presentation** (Nov 16) — must show modeling + complete solver runs + heuristics in progress
-- [ ] *Buffer window (Nov 17 – Dec 9):* absorb Presentation 1 feedback; second-seed reruns (only if the spine is on schedule); report polish
-- [ ] Presentation 2 prep & peer/self assessment tasks (NAAP) (Dec 10)
-- [ ] Final packaging: code + instances + PDF → single `zip/rar/tar.gz` (Dec 10–11 — written while reviewers double-check)
-- [ ] Review & submit (**Dec 12 — placeholder date, confirm with the professor**)
+## Fase 7 — Empacotamento & submissão
 
-> **Scheduling assumptions (Oct 21 start → Nov 16 Presentation 1 → Dec 12 final delivery):** the spine still runs to
-> Presentation 1 (Nov 16) unchanged; the Nov 17 – Dec 9 window is open buffer (feedback absorption, seed reruns,
-> report polish). Packaging lands Dec 10–11 and submission on Dec 12 — a **placeholder** to be confirmed with the
-> professor. The team works through weekends and holidays alike (including the Nov 2 Finados holiday).
+- [ ] Arquivo único (.zip ou .tar.gz) com: código + dados de instâncias +
+      modelo + scripts de heurística + PDF do relatório + (opcionalmente) o
+      HTML congelado do Quarto para tabelas de análise (mantido fora das
+      leituras de arquivo único). Só a última submissão conta.
+- [ ] Verificar higiene do repositório commitado conforme `AGENTS.md`: sem
+      `output/`, sem `.devenv`, sem `report.quarto_ipynb`, sem `__pycache__`
+      na submissão.
+- [ ] Remover referências do DATASETS.md/relatório a candidatos de dataset
+      abandonados antes da submissão.
 
-## 4. Gantt overview
+## Higiene contínua (todas as fases)
 
-```mermaid
-gantt
-    title BPP Project — 5 actors, Oct 21 → Nov 16 2026 (M1) → Dec 12 2026 (final delivery)
-    dateFormat  YYYY-MM-DD
-    axisFormat  %b %d
-
-    section Phase 0 — Setup
-    Kickoff & scenario lock          :a1, 2026-10-21, 1d
-    Env setup (gurobipy, PySCIPOpt)  :a4, 2026-10-21, 2d
-    Repo scaffold & per-actor plans  :a1, 2026-10-22, 2d
-
-    section Phase 1 — Lit. review
-    Asta Paper Finder sweep          :a2, 2026-10-21, 4d
-    Canon curation & refs.bib        :a2, after a2, 3d
-    Sections 1–2 skeleton            :a2, 2026-10-28, 5d
-
-    section Phase 2 — Kaggle data
-    Kaggle download & schema check   :a3, 2026-10-21, 3d
-    Normalize & bucket instances     :a3, 2026-10-26, 3d
-
-    section Phase 3 — Modeling
-    MILP + symmetry breaking         :a1, 2026-10-26, 3d
-    L1/L2 bounds                     :a1, 2026-10-29, 1d
-    Validation vs baselines          :crit, a1, 2026-10-30, 1d
-    model.tex frozen                 :milestone, 2026-10-30, 0d
-
-    section Phase 4 — Solvers (exact)
-    Gurobi impl & validate           :crit, a4, 2026-10-30, 4d
-    SCIP impl & parity check         :crit, a4, 2026-11-05, 3d
-
-    section Phase 5 — Alternatives
-    FFD / BFD heuristics             :a5, 2026-10-30, 4d
-    Meta-heuristic (SA)              :a5, 2026-11-04, 4d
-
-    section Phase 6 — Benchmarks
-    Harness & CSV matrix             :a3, 2026-11-03, 2d
-    Run full benchmark               :crit, a3, 2026-11-10, 1d
-    analyze-data pass                :a3, 2026-11-10, 2d
-
-    section Phase 7 — Report
-    Sections 1–2 (early draft)       :a2, 2026-10-28, 6d
-    Sections 3–4 (results)           :crit, a2, 2026-11-11, 2d
-    Report §5 & full revision        :a1, 2026-11-13, 1d
-
-    section Phase 8 — Delivery
-    Milestone M1 — Presentation 1    :milestone, 2026-11-16, 0d
-    Buffer — reruns & polish         :2026-11-17, 23d
-    Presentation 2 & NAAP prep       :m2, 2026-12-10, 1d
-    Package (buffer)                 :crit, 2026-12-10, 2d
-    Milestone M2 — Review & submit   :crit, milestone, 2026-12-12, 0d
-```
-
-> **Note on the critical path:** Model freeze (Oct 30) → Gurobi (Nov 2) → SCIP
-> (Nov 6) → benchmark run (Nov 10) → results sections (Nov 12) → revision/PDF
-> (Nov 13) → **Presentation 1 (Nov 16)** → the **Nov 17 – Dec 9 window becomes
-> wide buffer** (seed reruns, report polish, presentation-feedback absorption) →
-> packaging (Dec 10–11) → submission (Dec 12 — placeholder). The spine keeps a
-> **2-day packaging buffer** (Dec 10–11) plus ~3 weeks of post-presentation
-> slack. The buffer absorbs slips from the spine: if SCIP runs early, spend it
-> on seed reruns and deeper report polish, not on new features. As before,
-> A2/A3 lanes (literature, data) complete in week 1 and are designated assist
-> lanes for the spine.
-
-### Scope guardrails (lightened vs the Nov 11 compression, still in force)
-
-1. **One** meta-heuristic (SA only), no Tabu/GA variants.
-2. **Primary benchmark seed + one rerun seed** — the rerun is a *buffer activity*, never a blocker.
-3. Large bucket (100–200 items) remains **heuristics-only**; exact solvers prove toy/medium only.
-4. Real-dataset validation limited to **one** chosen real set (per `DATASETS.md` §6) — prep-only after Oct 28; it may be dropped entirely if the spine slips, with honest reporting of synthetic-only results.
-5. Presentation 1 feedback is *absorbed*, not re-planned.
+- [ ] Comitar mudanças de ambiente (`devenv.*`, `requirements.txt`) junto com
+      a mudança de código que as exige.
+- [ ] Manter `data/raw/` rastreado — nunca refazer download nem gitignore.
+- [ ] Scripts de renderização / edições do relatório mantêm o vocabulário do
+      domínio em vista: pedidos / **reservas (bookings)**, nunca "trucks"
+      (rota aérea).

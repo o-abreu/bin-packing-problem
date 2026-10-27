@@ -1,267 +1,336 @@
-# Dataset Research — Real Candidates per Use Case
+# Pesquisa de Datasets — Candidatos Reais por Caso de Uso
 
-Companion to [`TODO.md`](./TODO.md) (Phase 2) and the project brief
-[`Projeto_PM_BCC_2026.md`](./Projeto_PM_BCC_2026.md). Each candidate dataset is
-mapped onto the **generic BPP formulation** from the brief: items $I$ with sizes
-$w_i$, bins $J$ with capacity $C$, decision $x_{ij}$, $y_j$, objective
+Documento companheiro do [`TODO.md`](./TODO.md) (Fase 2) e do enunciado
+[`Projeto_PM_BCC_2026.md`](./Projeto_PM_BCC_2026.md). Cada dataset candidato é
+mapeado na **formulação genérica de BPP** do enunciado: itens $I$ com tamanhos
+$w_i$, caixas $J$ com capacidade $C$, decisão $x_{ij}$, $y_j$, objetivo
 $\min \sum_j y_j$.
 
-The five use cases named in the brief were used as keywords: **(1)**
-carga/veículos · **(2)** consolidação de VMs · **(3)** backup/arquivamento ·
+Os cinco casos de uso nomeados no enunciado foram usados como palavras-chave:
+**(1)** carga/veículos · **(2)** consolidação de VMs · **(3)** backup/arquivamento ·
 **(4)** armários de laboratório · **(5)** diagramação de provas.
 
-**Fit legend:**
+**Legenda de adequação:**
 
-🟢 strong (1:1 mapping, real data)
+🟢 forte (mapeamento 1:1, dados reais)
 
-🟡 moderate (needs preprocessing/derivation)
+🟡 moderado (precisa de pré-processamento/derivação)
 
-🔴 weak (illustrative only).
+🔴 fraco (apenas ilustrativo).
 
 ---
 
-## 0. Synthetic reference — _Pick and Place Binning Dataset_ (current default)
+## 0. Referência sintética — _Pick and Place Binning Dataset_ (default atual)
 
 |             |                                                                                                                                                           |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Source**  | [Kaggle `panavraaj/pick-and-place-binning-dataset`](https://www.kaggle.com/datasets/panavraaj/pick-and-place-binning-dataset)                             |
-| **Type**    | Synthetic, MIT license, usability 7.5, ~188 MB (JSON)                                                                                                     |
-| **Content** | Binning instances at 6 sizes (3/5/10/40/100/200 objects): `objects` (sizes), `bins` (capacities), precomputed `greedy_sequence` + `greedy_cost` baselines |
+| **Fonte**   | [Kaggle `panavraaj/pick-and-place-binning-dataset`](https://www.kaggle.com/datasets/panavraaj/pick-and-place-binning-dataset)                             |
+| **Tipo**    | Sintético, licença MIT, usabilidade 7.5, ~188 MB (JSON)                                                                                                   |
+| **Conteúdo** | Instâncias de binning em 6 tamanhos (3/5/10/40/100/200 objetos): `objects` (tamanhos), `bins` (capacidades), baselines pré-computados `greedy_sequence` + `greedy_cost` |
 
-**Relation to use case (cargo/allocation):** generic stand-in. Objects =
-packages ($w_i$), bins = truck/container capacity ($C$). The bundled
-`greedy_cost` baselines make it valuable for the report's **alternative-method
-section** (every instance has a documented greedy reference to beat, and makes
-MILP optima directly comparable). Caveat: **no real demand/weight distribution**
-— synthetic generator, so the report must be honest that instances reflect a
-synthetic generator, not field data. Any of the real datasets below can
-supersede it as the "real-world claim," or they can be combined (greedy-baseline
-benchmark + real instances as validation).
+**Relação com o caso de uso (carga/alocação):** substituto genérico. Objetos =
+pacotes ($w_i$), caixas = capacidade de caminhão/contêiner ($C$). As baselines
+`greedy_cost` embutidas tornam o dataset valioso para a **seção de método
+alternativo** do relatório (toda instância tem uma referência greedy
+documentada a ser batida, e torna os ótimos do MILP diretamente
+comparáveis). Ressalva: **nenhuma distribuição real de demanda/peso** —
+gerador sintético, então o relatório deve ser honesto em dizer que as
+instâncias refletem um gerador sintético, não dados de campo. Qualquer um dos
+datasets reais abaixo pode substituí-lo como a "afirmação de dado real", ou
+eles podem ser combinados (benchmark de baseline greedy + instâncias reais
+como validação).
 
 ---
 
 ## 1. Alocação de Cargas em Veículos (truck/container loading)
 
-### 🟢 Supply Chain Logistics Optimization Dataset — _real research benchmark_
+### 🟢 Supply Chain Logistics Optimization Dataset — _benchmark real de pesquisa_
 
-- **Source:**
+- **Fonte:**
   [Kaggle `omarstat2/supply-chain-logistics-data`](https://www.kaggle.com/datasets/omarstat2/supply-chain-logistics-data)
-  (originating from research at Brunel University London)
-- **Relates:** `OrderList` — **9,215 real customer orders** with weights, units,
-  shipping dates and ports; `FreightRates` encodes **weight brackets** (min/max
-  per tariff tier); `WhCapacities` — 19 daily throughput capacity limits.
-- **BPP mapping:** items $i$ = order lines, $w_i$ = `OrderList` weight; bins =
-  trucks/containers, $C$ = chosen weight-bracket threshold; objective = min
-  trucks per shipping date bucket. Optionally extend to cost minimization (min
-  Σcᵢⱼxᵢⱼ) if asking for tariff rate targets — nice bridge to the "minimize
-  cost/waste" variant the brief explicitly allows.
+  (originária de pesquisa na Brunel University London)
+- **Relaciona:** `OrderList` — **9.215 pedidos reais de clientes** com pesos,
+  unidades, datas de envio e portos; `FreightRates` codifica **brackets de
+  peso** (min/max por faixa tarifária); `WhCapacities` — 19 limites de
+  throughput diário.
+- **Mapeamento BPP:** itens $i$ = linhas de pedido, $w_i$ = `Weight` da
+  `OrderList`; caixas = caminhões/contêineres, $C$ = limite do bracket de peso
+  escolhido; objetivo = mínimo de caminhões por balde de data de envio.
+  Opcionalmente estender para minimização de custo (min Σcᵢⱼxᵢⱼ) se pedirem
+  metas de tarifa — ponte natural para a variante "minimizar custo/desperdício"
+  que o enunciado permite explicitamente.
+- **Semântica de faturamento do `FreightRates` — verificada contra o repositório
+  de origem (2026-10).** Fonte autoritativa: o paper companheiro do dataset
+  (Dzalbs & Kalganova 2020, *Computers & Industrial Engineering* 147, 106610,
+  DOI 10.1016/j.cie.2020.106610 — citado pelo registro figshare
+  `10.17633/rd.brunel.7558679.v2`; cópia green OA em arXiv:2001.08102), cujo
+  pseudo código da Figura 3 define o custo de transporte $tc_{kpj}$ de um
+  carregamento de peso $w$ numa linha como:
+  1. serviço `CRF` → $tc = 0$ (o cliente contrata o próprio frete).
+  2. modo `GROUND` → parcela proporcional da tarifa de carga completa $R$
+     cobrada pela transportadora (rate $R$ = "the freight rate (dollars per
+     kilogram) for given weight gap based on total weight for the line").
+  3. Caso contrário $tc = \max(R \cdot w,\; M)$, onde $M$ = `minimum cost` e
+     $R$ = `rate` ($/kg) da **faixa de peso contendo $w$** (faixa selecionada
+     pelo peso total da linha; o paper: "The freight rate is determined based
+     on total weight on any given line and the corresponding weight band in
+     the freight rate table").
+
+  → **O `rate` por kg é cobrado sobre a *totalidade* do peso do carregamento;
+  o `minimum cost` é um piso de custo, não um limiar de peso faturável.** Não
+  há cobrança sobre o excesso acima de `minm_wgh_qty`.
+  → Implicação para o modelo: o custo verdadeiro por reserva é o
+  piecewise-linear $\max(R_k\, w,\, f_k)$; o objetivo do MILP $\sum f_k
+  y_{jk}$ mantém apenas o termo de taxa fixa (o rate por kg é o "refinamento"
+  documentado no relatório) e subestima custos nas rotas onde $R_k w > f_k$.
+- **Níveis de serviço (`svc_cd`) — verificados contra o paper companheiro
+  (texto do §4, 2026-10).** O paper define níveis de serviço exigidos pelo
+  cliente: **DTD (Door to Door)**, **DTP (Door to Port)**, **CRF (Customer
+  Referred Freight)**, e afirma que o cliente decide o nível de serviço
+  requerido — de modo que `svc_cd` em um pedido é um *atributo de
+  requisito*, não uma decisão de otimização. Uma reserva (carrier ×
+  `svc_cd` × bracket) só pode atender pedidos que exijam o **mesmo** nível de
+  serviço (carregamentos door-to-door e door-to-port não podem ser
+  consolidados — obrigações de entrega distintas).
+- **Decomposição em instâncias (fiel ao paper, decidido 2026-10).** Os
+  empacotamentos são escopados **por rota *e* nível de serviço**, e pedidos
+  CRF são *excluídos* das instâncias de empacotamento: a regra 1 da Figura 3
+  define $tc = 0$ para CRF (o cliente contrata o próprio frete; a empresa só
+  incorre em custo de armazém), logo não há reserva de transportadora a
+  fazer — isso substitui a suposição antiga de que o solver "reatribuiria" os
+  pedidos CRF/`V44_3` sem tarifa. Instâncias tarifadas resultantes:
+  | Instância (rota × svc) | Pedidos tarifados | Linhas em FreightRates |
+  |---|---|---|
+  | `PORT04→PORT09` × DTP | 6.184 | 10 |
+  | `PORT04→PORT09` × DTD | 2.143 | 221 |
+  | `PORT09→PORT09` × DTP | 34 | ~10 |
+  | (CRF: 714 + 1 + 139 = 854 pedidos) | excluídos | 0 linhas |
+  O único pedido de `PORT05→PORT09` é CRF, então não há instância tarifada.
 
 ### 🟢 Large-Scale Route Optimization (Microsoft solution accelerator)
 
-- **Source:**
+- **Fonte:**
   [Kaggle `mexwell/large-scale-route-optimization`](https://www.kaggle.com/datasets/mexwell/large-scale-route-optimization)
-- **Relates:** item-to-truck assignment; items carry `Area (m²)` and
-  `Weight (kg)`; 3 truck types with capacity on both dimensions (16.5 m: 10,000
-  kg / 16.1×2.5 m², 12.5 m: 5,000 kg / 12.1×2.5 m², 9.6 m: 2,000 kg / 9.1×2.3
-  m²).
-- **BPP mapping:** formally a VRP/VRPPD variant; by **ignoring
-  routing/timing/deadlines**, the _pure bin-packing core_ is exactly the model
-  in the brief (items with wᵢ, heterogeneous bins with capacity D).
-  Heterogeneous-capacity bins ($C_j$ varying per truck type) are an easy
-  generalization of the brief's constant-C formula — a wrinkle worth flagging in
-  the report's "what we generalized" narrative.
+- **Relaciona:** alocação item→caminhão; itens carregam `Area (m²)` e
+  `Weight (kg)`; 3 tipos de caminhão com capacidade nas duas dimensões (16.5
+  m: 10.000 kg / 16.1×2.5 m², 12.5 m: 5.000 kg / 12.1×2.5 m², 9.6 m: 2.000 kg
+  / 9.1×2.3 m²).
+- **Mapeamento BPP:** formalmente uma variante VRP/VRPPD; **ignorando
+  roteirização/prazos/deadlines**, o _núcleo puro de bin packing_ é exatamente
+  o modelo do enunciado (itens com wᵢ, caixas heterogêneas com capacidade D).
+  Caixas de capacidade heterogênea ($C_j$ variando por tipo de caminhão) são
+  uma generalização fácil da fórmula de C constante do enunciado — um detalhe
+  que vale sinalizar na narrativa "o que generalizamos" do relatório.
 
 ### 🟢 Cross-Border E-commerce Logistics Data (China)
 
-- **Source:**
+- **Fonte:**
   [Kaggle `zara2099/china-cross-border-logistics-data`](https://www.kaggle.com/datasets/zara2099/china-cross-border-logistics-data)
-- **Relates:** 7,000 shipment records with `package_weight_kg` and
-  `package_volume_cbm` per shipment.
-- **BPP mapping:** cargo use — instant item set ($w_i$ = package weight/volume).
-  Weakest of the three causally because it lacks container capacity specs (C
-  must be imported from industry standard, e.g. 28.8 m³ 40-ft container) —
-  acceptable and citable via brief.
+- **Relaciona:** 7.000 registros de envio com `package_weight_kg` e
+  `package_volume_cbm` por envio.
+- **Mapeamento BPP:** uso de carga — conjunto de itens instantâneo ($w_i$ =
+  peso/volume do pacote). O mais fraco dos três causalmente porque faltam
+  especificações de capacidade de contêiner (C precisa ser importado de
+  padrão da indústria, p.ex. contêiner 40' de 28.8 m³) — aceitável e citável
+  via enunciado.
 
 ---
 
 ## 2. Consolidação de Máquinas Virtuais (Cloud Computing)
 
-### 🟢 Azure Traces for Packing 2020 — _purpose-built for packing research_
+### 🟢 Azure Traces for Packing 2020 — _feito sob medida para pesquisa em packing_
 
-- **Source:**
+- **Fonte:**
   [`Azure/AzurePublicDataset` → `AzureTracesForPacking2020`](https://github.com/Azure/AzurePublicDataset/blob/master/AzureTracesForPacking2020.md)
-  (hosted as GitHub releases) · cite the Azure OSDI'20 paper "Protean: VM
+  (hospedado como GitHub releases) · citar o paper de OSDI'20 "Protean: VM
   Allocation Service at Scale".
-- **Relates:** packed **VM requests along with their priority**, lifetime, and
-  **normalized resources allocated** per VM type — released by Azure
-  _specifically to evaluate packing/bin-packing algorithms_. This is today's
-  standard: recent packing/consolidation evaluations (e.g., PUVAR 2023; 2025–26
-  vector-BP workloads) all benchmark on it.
-- **BPP mapping:** items = VM requests ($w_i$ = normalized CPU+RAM demand), bins
-  = physical hosts ($C$ = host capacity), objective = minimize the number of
-  active hosts. The request **priority** field also opens a richer extension
-  (guaranteed vs. best-effort placement precedence) — simulated as 1D first, an
-  honest extension rather than a hidden assumption.
+- **Relaciona:** requisições de **VM empacotadas com prioridade**, tempo de
+  vida e **recursos normalizados alocados** por tipo de VM — lançado pela
+  Azure _especificamente para avaliar algoritmos de packing/bin-packing_. É o
+  padrão atual: avaliações recentes de packing/consolidação (p.ex. PUVAR
+  2023; workloads vector-BP 2025–26) todas fazem benchmark sobre ele.
+- **Mapeamento BPP:** itens = requisições de VM ($w_i$ = demanda normalizada
+  CPU+RAM), caixas = hosts físicos ($C$ = capacidade do host), objetivo =
+  minimizar hosts ativos. O campo de **prioridade** da requisição também abre
+  uma extensão mais rica (precedência guaranteed vs. best-effort) — simulado
+  primeiro em 1D, uma extensão honesta em vez de suposição oculta.
 
-### 🟢 Hosted on PlanetLab/CoMon (10-day traces, Mar–Apr 2011)
+### 🟢 Hospedado em PlanetLab/CoMon (traces de 10 dias, mar–abr 2011)
 
-- **Source:** public workload traces distributed through the CoMon monitoring
-  project; **the canonical BPP/VM-consolidation benchmark** in the
-  heuristic/meta-heuristic literature from 2011–2022 (e.g., OpenStack Neat /
-  CloudSim MBFD evaluations, UP-VMC, AEDQN-VMC). CPU utilization of > 1,000 VMs
-  sampled every 5 min; standard practice filters to 5–90% utilization and slices
-  per day.
-- **Relates:** CPU/RAM demands per VM per day → $w_i$; physical server capacity
-  → $C$; minimizing active hosts is classic consolidation as a 1D BPP.
-- **BPP mapping:** identical to above. The standard practice in the
-  consolidation literature — slicing the traces into one instance per day — maps
-  directly onto the project's toy/medium/large bucketing.
+- **Fonte:** traces públicos de workload distribuídos pelo projeto de
+  monitoramento CoMon; **o benchmark canônico de BPP/consolidação de VM** na
+  literatura de heurísticas/meta-heurísticas de 2011–2022 (p.ex. avaliações
+  OpenStack Neat / CloudSim MBFD, UP-VMC, AEDQN-VMC). Utilização de CPU de
+  > 1.000 VMs amostrada a cada 5 min; prática padrão filtra para 5–90% de
+  utilização e fatia por dia.
+- **Relaciona:** demanda CPU/RAM por VM por dia → $w_i$; capacidade do
+  servidor físico → $C$; minimizar hosts ativos é consolidação clássica como
+  BPP 1D.
+- **Mapeamento BPP:** idêntico ao acima. A prática padrão na literatura de
+  consolidação — fatiar os traces em uma instância por dia — mapeia
+  diretamente para o baldes toy/médio/grande do projeto.
 
-### 🟢 Google Borg traces 2011/2019 and Bitbrains Grid Workloads Archive
+### 🟢 Google Borg traces 2011/2019 e Bitbrains Grid Workloads Archive
 
-- **Source:**
+- **Fonte:**
   [github.com/google/cluster-data](https://github.com/google/cluster-data)
   (CC-BY) · [Bitbrains / Grid Workloads Archive](https://www.gridworkloads.org/)
-  — 1,750 VMs from managed-hosting clusters (fastStorage 1,250 VMs + Rnd 500
-  VMs, 30 days, sampled every 5 min).
-- **Relates:** real memory/CPU utilization time series; academic
-  freely-accessible, widely cited in CloudSim + empirical consolidation papers.
-- **BPP mapping:** same as above, with richer multi-dimensional resources
-  possible (CPU, memory). Both are real and can anchor the "real data" claim in
-  the report. Azure Packing-2020 remains our first pick: normalized resources
-  make the 1D reduction clean, and per-VM request sizes fit neatly with the
-  plan's "medium bucket ≤ 60 items for exact solver" split.
+  — 1.750 VMs de clusters de hospedagem gerenciada (fastStorage 1.250 VMs +
+  Rnd 500 VMs, 30 dias, amostrados a cada 5 min).
+- **Relaciona:** séries temporais reais de utilização de memória/CPU;
+  academicamente de acesso livre, amplamente citado em papers de CloudSim +
+  consolidação empírica.
+- **Mapeamento BPP:** mesmo de acima, com recursos multidimensionais mais
+  ricos possíveis (CPU, memória). Ambos são reais e podem ancorar a alegação
+  de "dados reais" no relatório. Azure Packing-2020 continua sendo nossa
+  primeira escolha: recursos normalizados tornam a redução 1D limpa, e os
+  tamanhos de requisição por VM encaixam bem no recorte "balde médio ≤ 60
+  itens para solver exato" do plano.
 
 ---
 
 ## 3. Backup e Arquivamento de Dados (media/volume allocation)
 
-### 🟢 LANL Anonymous Filesystem Walk Metadata (file sizes truly real)
+### 🟢 LANL Anonymous Filesystem Walk Metadata (tamanhos de arquivo verdadeiramente reais)
 
-- **Source:**
+- **Fonte:**
   [LANL Storage Data (fsstats 2011/2012 + archive/NFS walks)](https://usrc.lanl.gov/data/storage-data.php),
-  released under LA-UR-07-5769.
-- **Relates:** a real datacenter file-system walk: **112M+ records with file
-  sizes**, create/mod times, UID/GID per file — no fabrication, from Los Alamos
-  National Laboratory.
-- **BPP mapping:** items = files/datasets ($w_i$ = file size in GB), bins =
-  storage volumes ($C$ = media capacity). Industrial grounding for $C$ and size
-  limits comes from real deployment literature: the Oklahoma PetaStore reports
-  "LTO-5 1.5 TB / LTO-6 2.5 TB tapes, min file 1 GB, max 250 GB, recommended
-  pack 10–100 GB" (Calhoun, _J. Comput. Sci._ 2016) — giving industrial
-  constraints on both $C$ and admissible $w_i$. The "no file > C" rule adds the
-  unsplittable-item edge case the brief's capacity constraint already implies.
+  liberado sob LA-UR-07-5769.
+- **Relaciona:** um walk real de sistema de arquivos de datacenter:
+  **112M+ registros com tamanhos de arquivo**, create/mod times, UID/GID por
+  arquivo — sem fabricação, do Los Alamos National Laboratory.
+- **Mapeamento BPP:** itens = arquivos/datasets ($w_i$ = tamanho do arquivo em
+  GB), caixas = volumes de armazenamento ($C$ = capacidade da mídia). O
+  embasamento industrial para $C$ e limites de tamanho vem da literatura de
+  deploy real: o Oklahoma PetaStore reporta "fitas LTO-5 1.5 TB / LTO-6 2.5
+  TB, arquivo mínimo 1 GB, máximo 250 GB, pacote recomendado 10–100 GB"
+  (Calhoun, _J. Comput. Sci._ 2016) — dando restrições industriais tanto para
+  $C$ quanto para $w_i$ admissíveis. A regra "nenhum arquivo > C" acrescenta o
+  caso de borda do item insplittable que a restrição de capacidade do
+  enunciado já implica.
 
-### 🟢 SDSS Data Volume Tables (datasets as big items)
+### 🟢 Tabelas de Volume de Dados do SDSS (datasets como itens grandes)
 
-- **Source:**
+- **Fonte:**
   [`sdss4.org/dr17/data_access/volume/`](https://www.sdss4.org/dr17/data_access/volume/)
-  — real published volumes per SAS data product (e.g., `apogee/spectro/redux` 52
-  TB, `manga/spectro/analysis` 9.7 TB, `eboss/lss` 1.07 TB...).
-- **Relates:** backing up an institution's research data at the level of
-  aggregated **projects/data products** (item sizes GB–TB, far better matched to
-  the brief's "university backup scenario" than raw small-file walks). SDSS
-  publicly documents each product's volume and file count, so item granularity
-  can be chosen at either the product level or the file level.
+  — volumes reais publicados por produto de dados do SAS (p.ex.,
+  `apogee/spectro/redux` 52 TB, `manga/spectro/analysis` 9.7 TB, `eboss/lss`
+  1.07 TB...).
+- **Relaciona:** backup dos dados de pesquisa de uma instituição no nível de
+  **projetos/produtos de dados** agregados (tamanhos de itens GB–TB, muito
+  melhor encaixado no "cenário de backup universitário" do enunciado do que
+  walks de arquivos pequenos). O SDSS documenta publicamente o volume e a
+  contagem de arquivos de cada produto, então a granularidade do item pode
+  ser escolhida tanto no nível de produto quanto no nível de arquivo.
 
 ---
 
-## 4. Alocação de Armários e Espaços nos Laboratórios (weakest real-data fit)
+## 4. Alocação de Armários e Espaços nos Laboratórios (pior adequação de dado real)
 
-### 🟢 Zenodo: Weekly-demand rack-loading generator (Hoare & Beasley catalogue)
+### 🟢 Zenodo: gerador de rack-loading com demanda semanal (catálogo Hoare & Beasley)
 
-- **Source:** [Zenodo record 23104538](https://doi.org/10.5281/zenodo.23104538)
-  (Souyri, Lahrichi & Rousseau, 2026) — 105 instances × 104 weeks (qty;
-  length,width,height per item); **item dimensions come from the real retail
-  stockroom catalogue of Hoare & Beasley (2001), distributed via the
-  OR-Library**; quantities synthetic.
-- **Relates:** rack-loading in a sterilization/logistics setting — item families
-  with mm-accurate dimensions plus weekly demand quantities, packed into racks
-  with finite cross-section capacity.
-- **BPP mapping:** the closest real checkpoint to "locker/room allocation":
-  items = equipment families (usable length per unit), bins = locker/rack bays,
-  $C$ = the bay's usable row length. The brief's 1D formulation holds when bays
-  are uniform; the item width/height columns additionally allow a 2D extension
-  as future work (as the brief itself suggests).
+- **Fonte:** [Zenodo record 23104538](https://doi.org/10.5281/zenodo.23104538)
+  (Souyri, Lahrichi & Rousseau, 2026) — 105 instâncias × 104 semanas (qty;
+  length,width,height por item); **as dimensões dos itens vêm do catálogo real
+  de estoque de loja de varejo de Hoare & Beasley (2001), distribuído pela
+  OR-Library**; quantidades sintéticas.
+- **Relaciona:** rack-loading num contexto de esterilização/logística —
+  famílias de itens com dimensões precisas em mm mais quantidades de demanda
+  semanal, empacotadas em racks com capacidade finita de seção transversal.
+- **Mapeamento BPP:** o checkpoint real mais próximo de "alocação de
+  armário/sala": itens = famílias de equipamentos (comprimento utilizável por
+  unidade), caixas = baias de armário/rack, $C$ = comprimento de fileira
+  utilizável da baia. A formulação 1D do enunciado vale quando as baias são
+  uniformes; as colunas de largura/altura dos itens permitem ainda uma
+  extensão 2D como trabalho futuro (como o próprio enunciado sugere).
 
-### 🟡 Physical lab-space audit data (you need this for the report narrative)
+### 🟡 Dados de auditoria de espaço físico de laboratório (necessários para a narrativa do relatório)
 
-- **Source:** two real academic audits of lab storage utilization —
-  [Kennesaw State DigitalCommons, Precision Lab space study at Siemens Energy](https://digitalcommons.kennesaw.edu/egr_srdsn/27)
-  (shelf/cabinet cube dimensions measured in cubic ft; ~10.45% lab-space used
-  for storage) and an NTU Biological Sciences lab 5S/space optimization study
-  ([Kia Min Wee 2018](http://hdl.handle.net/10356/76414)), plus a national-lab
-  facility **equipment measurement survey**
-  ([Hebert & Kang 2015 — 361 large equipment pieces located, measured, categorized into 6 groups](https://exa.ai/library/publication/dhbzf10y1bg)).
-- **Relates:** these provide the brief's _industrial context_ for the report
-  introduction: equipment families (analytical vs. storage vs. process),
-  measured cabinet/shelf dimensions and storage volumes of real lab spaces. But
-  they are survey-type data (a handful of items per site), not ready-made BPP
-  instances.
-- **BPP mapping:** the Hebert & Kang measurements supply equipment counts +
-  physical categories almost directly; the lab-space audits supply
-  $C_{\text{locker}}$ via measured cube volumes. Honest assessment: fit is 🟡 —
-  enough to state "real equipment types and locker dimensions from published
-  audits," but instances must be aggregated from descriptive statistics rather
-  than complete item-level data.
+- **Fonte:** duas auditorias acadêmicas reais de utilização de armazenamento
+  em lab —
+  [Kennesaw State DigitalCommons, estudo de lab space na Siemens Energy](https://digitalcommons.kennesaw.edu/egr_srdsn/27)
+  (dimensões de cubo de prateleira/armário medidas em pés cúbicos; ~10.45% do
+  espaço do lab usado para estocagem) e um estudo de 5S/otimização de espaço
+  do laboratório de Ciências Biológicas da NTU
+  ([Kia Min Wee 2018](http://hdl.handle.net/10356/76414)), mais um
+  levantamento de medição de **equipamentos** de facility de laboratório
+  nacional
+  ([Hebert & Kang 2015 — 361 equipamentos grandes localizados, medidos,
+  categorizados em 6 grupos](https://exa.ai/library/publication/dhbzf10y1bg)).
+- **Relaciona:** estes dão o _contexto industrial_ do enunciado para a
+  introdução do relatório: famílias de equipamentos (analítico vs. estocagem
+  vs. processos), dimensões medidas de armários/prateleiras e volumes de
+  estocagem de espaços reais de lab. Mas são dados de levantamento (poucos
+  itens por site), não instâncias de BPP prontas.
+- **Mapeamento BPP:** as medidas de Hebert & Kang fornecem contagens de
+  equipamentos + categorias físicas quase diretamente; as auditorias de
+  lab-space fornecem $C_{\text{armário}}$ via volumes cúbicos medidos.
+  Avaliação honesta: adequação 🟡 — o suficiente para afirmar "tipos reais de
+  equipamentos e dimensões de armários de auditorias publicadas", mas as
+  instâncias teriam de ser agregadas de estatísticas descritivas, não de
+  dados completos no nível de item.
 
 ---
 
-## 5. Diagramação e Alocação de Questões em Provas (page-space allocation)
+## 5. Diagramação e Alocação de Questões em Provas (alocação de espaço de página)
 
-### 🟢 Open exam-question corpora (questions with measured text lengths)
+### 🟢 Corpora abertos de questões de prova (questões com comprimentos de texto medidos)
 
-- **Sources:**
+- **Fontes:**
   - [HF `datavorous/entrance-exam-dataset`](https://huggingface.co/datasets/datavorous/entrance-exam-dataset)
-    — 44.4k real JEE-Advanced [2006–2024] questions with stems, exam/subject
-    tags, and per-question metadata.
+    — 44.4k questões reais do JEE-Advanced [2006–2024] com enunciados, tags de
+    prova/disciplina e metadados por questão.
   - [HF `letmarchezi/ENEM_Brazil_National_High_School_Exam_2022_to_2024`](https://huggingface.co/datasets/letmarchezi/ENEM_Brazil_National_High_School_Exam_2022_to_2024)
-    — full official **ENEM 2022–2024 papers** as PDF extracts (Brazilian,
-    matches USP context!).
+    — provas completas oficiais do **ENEM 2022–2024** como extratos de PDF
+    (brasileiro, casa com o contexto USP!).
   - [HF `OpenTWBench/tw-exam-bench`](https://huggingface.co/datasets/OpenTWBench/tw-exam-bench)
-    — 30 official ROC Taiwan public-service exams (Apache-2.0; official Ministry
-    data).
-- **Relates:** every question is an item $i$; $w_i$ = **estimated rendered
-  height** (derived from question character/token count + option block heights;
-  a calibration constant per font size bridges text lengths to print space).
-  Bins = exam pages: $C$ = printable content area minus headers/margins. One
-  extra integer nuance: a question must fit entirely within a page (no
-  fragmentation between pages — the brief explicitly mentions this as a
-  secondary goal).
-- **BPP mapping:** packing questions into pages while minimizing the page count
-  **is the brief's use case verbatim** ("minimizar o número total de páginas
-  impressas"), and ENEM is maximally contextual (Brazilian official exams — the
-  exact audience of the report). Two caveats to state openly in the report: (a)
-  rendered heights must be _derived_ from question text lengths (a calibration
-  constant per font size; the exam-length study of Lin, Lu & Lien 2021 — 611
-  real items averaging 88.8 words/item — offers published calibration); (b) the
-  derived heights should be validated against a sample of real ENEM page layouts
-  before the solvers run on them.
+    — 30 provas oficiais de serviço público de Taiwan (Apache-2.0; dados do
+    ministério oficial).
+- **Relaciona:** cada questão é um item $i$; $w_i$ = **altura renderizada
+  estimada** (derivada da contagem de caracteres/tokens do enunciado + alturas
+  dos blocos de alternativas; uma constante de calibração por tamanho de
+  fonte conecta comprimentos de texto ao espaço impresso). Caixas = páginas
+  da prova: $C$ = área de conteúdo impressa menos cabeçalhos/margens. Uma
+  nuance inteira extra: uma questão deve caber inteira na página (sem
+  fragmentação entre páginas — o enunciado menciona isso explicitamente como
+  objetivo secundário).
+- **Mapeamento BPP:** empacotar questões em páginas minimizando a contagem de
+  páginas **é o caso de uso do enunciado à letra** ("minimizar o número total
+  de páginas impressas"), e o ENEM é maximamente contextual (provas oficiais
+  brasileiras — exatamente o público do relatório). Duas ressalvas a serem
+  dadas abertamente no relatório: (a) as alturas renderizadas devem ser
+  _derivadas_ dos comprimentos de texto das questões (uma constante de
+  calibração por tamanho de fonte; o estudo de comprimento de provas de Lin,
+  Lu & Lien 2021 — 611 itens reais com média de 88.8 palavras/item — oferece
+  calibração publicada); (b) as alturas derivadas devem ser validadas contra
+  uma amostra de layouts reais de páginas do ENEM antes de rodar os solvers.
 
 ---
 
-## 6. Recommended course of action for the group
+## 6. Conduta recomendada para o grupo
 
-1. **Primary real dataset:** pick one use case and pair it with its top
-   candidate:
-   - cargo → `supply-chain-logistics-data` (OrderList → trucks)
-   - VM consolidation → `AzureTracesForPacking2020` (purpose-made; also easiest
-     framing)
-   - backup → LANL filesystem walk + PetaStore industry capacities
-   - lab lockers → Zenodo rack-loading (Hoare & Beasley catalogue) + published
-     lab audit sizes
-   - exam pagination → **ENEM 2022–2024 dataset** (most Brazilian-contextual and
-     self-contained to explain)
-2. **Keep the synthetic `pick-and-place-binning-dataset`** as the _"controlled
-   benchmark"_ (has greedy baselines! clean 1D formula) precisely because every
-   real candidate above needs preprocessing.
-3. **Hybrid report story (fewest surprises):** Develop and tune on the synthetic
-   instances → then apply the pipeline to many real instances (e.g. ENEM
-   questions or VM requests via actor A3's preprocessing) as the **validation
-   set**, and say so explicitly in the report. This matches Phase 2 of `TODO.md`
-   (normalize to common `w_i` / `C` instances) and keeps both solvers +
-   heuristic vs `L2` bound comparisons uniform.
+1. **Dataset real primário:** escolher um caso de uso e pareá-lo com seu
+   melhor candidato:
+   - carga → `supply-chain-logistics-data` (OrderList → caminhões)
+   - consolidação de VMs → `AzureTracesForPacking2020` (feito para isso;
+     também o enquadramento mais fácil)
+   - backup → walk de sistema de arquivos do LANL + capacidades industriais
+     do PetaStore
+   - armários de lab → Zenodo rack-loading (catálogo Hoare & Beasley) +
+     tamanhos de auditorias de lab publicadas
+   - paginação de provas → **dataset ENEM 2022–2024** (o mais contextual
+     brasileiro e autocontido de explicar)
+2. **Manter o `pick-and-place-binning-dataset` sintético** como _"benchmark
+   controlado"_ (tem baselines greedy! fórmula 1D limpa) justamente porque
+   todo candidato real acima precisa de pré-processamento.
+3. **Narrativa híbrida do relatório (menos surpresas):** desenvolver e calibrar
+   nas instâncias sintéticas → depois aplicar o pipeline em muitas instâncias
+   reais (p.ex. questões do ENEM ou requisições de VM via o pré-processamento
+   do ator A3) como **conjunto de validação**, e dizer isso explicitamente no
+   relatório. Combina com a Fase 2 do `TODO.md` (normalizar para instâncias
+   com `w_i` / `C` comuns) e mantém as comparações de ambos os solvers +
+   heurística vs bound `L2` uniformes.
 
-**Provenance note:** all links above were verified as publicly available at the
-time of writing (Oct 2026); consolidate them into `refs.bib`/bibliografia during
-Phase 1 of [`TODO.md`](./TODO.md).
+**Nota de proveniência:** todos os links acima foram verificados como
+publicamente disponíveis no momento da escrita (out 2026); consolide-os em
+`refs.bib`/bibliografia durante a Fase 1 do [`TODO.md`](./TODO.md).
