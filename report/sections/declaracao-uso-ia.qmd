@@ -1,0 +1,91 @@
+# Declaração de uso de inteligência artificial {#sec-declaracao-ia}
+
+Este trabalho empregou ferramentas de inteligência artificial (IA) generativa
+como **apoio** a atividades de pesquisa, sempre sob supervisão humana e com
+responsabilidade integral do autor pelo conteúdo final. Esta seção declara quais
+ferramentas foram usadas, como foram configuradas e quais controles existem
+sobre o seu uso.
+
+## Escopo do uso
+
+A IA foi utilizada em: (i) busca, triagem e conferência de literatura
+(identificação de trabalhos, verificação de DOI e de dados bibliográficos); (ii)
+apoio à implementação e à depuração do código de modelagem e de solução
+(PuLP/HiGHS) e dos scripts de tratamento de instâncias; (iii) revisão de
+redação, consistência terminológica e conversão de unidades; e (iv) checagem de
+consistência interna entre texto, tabelas e resultados reportados.
+
+Não foram produzidos por IA os dados, a instância, os resultados numéricos nem
+as conclusões: toda solução reportada provém de execuções dos solvers sobre os
+arquivos em `data/raw/`, reproduzíveis a partir do código versionado, e cada
+número citado no texto foi reconferido contra a saída correspondente. A
+formulação do modelo, a escolha das instâncias e a interpretação dos resultados
+são de responsabilidade humana, assim como a decisão final sobre o que consta no
+relatório.
+
+## Ambiente e configuração
+
+Todo o uso ocorreu por meio do **OpenCode**, um _agent harness_ de código aberto
+executado localmente, cuja configuração é versionada de forma declarativa (Nix +
+Home Manager) no repositório público
+[`o-abreu/nix-config`](https://github.com/o-abreu/nix-config), no estado do
+commit `90b48b2` (28 out. 2026).[^nixrepo] A configuração do agente é, portanto,
+auditável: os caminhos abaixo são relativos a
+`home/features/programs/cli/opencode/`.
+
+- `default.nix` — habilitação do OpenCode e preferências da interface;
+- `agents.nix` — instruções globais do agente (`AGENTS.md`), incluindo a regra
+  de **nunca** instalar pacotes de forma imperativa, restringindo o ambiente ao
+  que está declarado no flake;
+- `agents/primary/research.nix` — definição do agente `research`, o único
+  autorizado a acionar o ferramental de pesquisa bibliográfica;
+- `tools/asta/default.nix` e `tools/asta/_skills.nix` — _skills_ e CLI do
+  **Asta** (AllenAI), _vendorizados_ do projeto `allenai/asta-plugins`;
+- `tools/zotero.nix` — acesso ao **Zotero** local via `zotero-mcp`/`zotero-cli`
+  sobre a API HTTP local do Zotero;
+- `mcp/` — definição dos servidores MCP habilitados;
+- `providers/` — provedores de modelos de linguagem.
+
+As tarefas de pesquisa usam o agente `research`, que tem permissão explícita
+apenas para as ferramentas de literatura; as mesmas ferramentas (Asta, Zotero e
+Kaggle) são negadas globalmente para os demais agentes. Essa separação é
+deliberada: ela concentra em um único perfil, com escopo restrito, o acesso a
+bases bibliográficas e a execução de comandos de pesquisa.
+
+## Recuperação de literatura
+
+A busca bibliográfica usou as _skills_ Asta `find-literature`,
+`semantic-scholar`, `pdf-download` e `literature-report`, apoiadas na API do
+Semantic Scholar e em PDFs de acesso aberto, além da _skill_ `check-claims` para
+revisar a aderência entre afirmações e evidências. A bibliografia foi mantida na
+coleção local do Zotero _Programação Matemática — Bin Packing (VSBPP)_, com
+subcoleção _Datasets_ para os dados e _softwares_. Toda entrada do `refs.bib`
+foi verificada quanto a autoria, veículo, ano e DOI; referências sugeridas por
+IA e não confirmadas em fonte primária foram descartadas.
+
+## Servidores MCP e modelos
+
+Os servidores MCP habilitados no ambiente são `context7` (documentação de
+bibliotecas), `kaggle` (acesso ao conjunto de dados), `github`, `nixos`,
+`devenv` e `morph-mcp`. Os modelos de linguagem utilizados foram o **DeepSeek
+V4.1 Flash** e o **GLM 5.3 Flash**, acessados por API por meio dos provedores
+declarados em `providers/` (`deepseek` e `opencode-go`); a escolha entre os dois
+modelos é feita por sessão.
+
+## Controles e verificação
+
+Três controles foram adotados: (i) ambiente reprodutível — dependências
+declaradas (`devenv.nix`, `requirements.txt`) e nenhuma instalação imperativa,
+de modo que todo código gerado com apoio de IA é executado no mesmo ambiente
+descrito no repositório; (ii) verificação de fontes — nenhuma referência
+bibliográfica entra no texto sem conferência em fonte primária; (iii)
+reconferência de resultados — os números do relatório são lidos das saídas do
+solver, não transcritos de respostas do modelo.
+
+O autor revisou integralmente o texto, o código e os resultados aqui
+apresentados. Eventuais erros remanescentes são de sua responsabilidade.
+
+[^nixrepo]: Repositório público: <https://github.com/o-abreu/nix-config>.
+    Configuração do agente em `home/features/programs/cli/opencode/`; regras
+    específicas deste projeto em `AGENTS.md`, na raiz do repositório do
+    trabalho.

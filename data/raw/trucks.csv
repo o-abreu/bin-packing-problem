@@ -1,0 +1,7 @@
+# Fleet table transcribed from microsoft/dstoolkit-route-optimization src/core/structure.py (MIT).
+# The repository README lists an older, different table (3 types, 10/5/2 t); the code is authoritative.
+truck_type,inner_length_m,inner_width_m,area_capacity_m2,weight_capacity_kg,cost_per_km,speed_kmh
+16.5,16.1,2.5,40.25,27000,10.0,40
+12.5,12.1,2.5,30.25,24000,9.0,40
+9.6,9.1,2.3,20.93,14000,6.5,40
+7.6,7.2,2.3,16.56,8000,5.5,40

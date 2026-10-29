@@ -2,13 +2,13 @@
 
 Plano por fases derivado do enunciado do curso [`Projeto_PM_BCC_2026.md`](./Projeto_PM_BCC_2026.md)
 e anotado com as decisões já tomadas neste repositório (ver
-[`DATASETS.md`](./DATASETS.md) e o esqueleto [`report.qmd`](./report.qmd)).
+[`DATASETS.md`](./DATASETS.md) e o esqueleto [`report/main.qmd`](./report/main.qmd)).
 Consulte este arquivo antes de começar o trabalho; anote a qual fase uma
 mudança pertence nas mensagens de commit.
 
 **Recapitulativo dos entregáveis (do enunciado):** duas implementações (modelo
 exato com solver + método alternativo, Python 3), relatório técnico (IEEE, via
-`report.qmd`), duas apresentações no semestre e um arquivo único
+`report/main.qmd`), duas apresentações no semestre e um arquivo único
 (.zip/.tar.gz) com código + dados de instâncias + PDF do relatório no
 e-disciplinas.
 
@@ -60,11 +60,11 @@ Responsável: **TODO (grupo)**.
 - [ ] Escrever a **Introdução** completa (enunciado §4.1): contexto de
       consolidação de frete, relevância industrial, breve revisão da
       literatura com citações ABNT/IEEE. Substituir o placeholder de bloco de
-      autores no `report.qmd`.
+      autores no `report/main.qmd`.
 
 ## Fase 2 — Modelagem & engenharia de instâncias (enunciado §3.1, NM)
 
-- [x] Modelo declarado no `report.qmd`: conjuntos ($I$, $K$, $J$), variáveis
+- [x] Modelo declarado no `report/main.qmd`: conjuntos ($I$, $K$, $J$), variáveis
       ($x_{ij}$, $y_{jk}$), objetivo $\min \sum_{j,k} f_k y_{jk}$, restrições
       R1–R5 (atribuição, teto do bracket, casamento de faixa, uma classe por
       reserva, nenhum item em reserva fechada).
@@ -94,7 +94,7 @@ Responsável: **TODO (grupo)**.
 ## Fase 3 — Soluções exatas (enunciado §3.1 / §4.3, NI-1)
 
 - [x] PuLP + CBC embutido ponta a ponta em uma instância pequena (no
-      `report.qmd`).
+      `report/main.qmd`).
 - [ ] Segundo solver: resolver as mesmas instâncias com **HiGHS** (`highspy`,
       já instalado) e/ou interface SCIP do PuLP — parear com o requisito do
       enunciado "um comercial + um gratuito":
@@ -113,7 +113,7 @@ Responsável: **TODO (grupo)**.
 ## Fase 4 — Método alternativo (enunciado §3.2 / §4.4, NI-2)
 
 - [x] Heurística FFD de baseline em uma instância pequena (`ffd_baseline` no
-      `report.qmd`) com lower bound baseado em peso (LB estilo L2).
+      `report/main.qmd`) com lower bound baseado em peso (LB estilo L2).
 - [ ] Estender a heurística da contagem simples de reservas para o **objetivo
       de custo**: FFD/BFD respeitando brackets de peso e o mínimo da faixa,
       em ordem de capacidade crescente.
@@ -128,7 +128,7 @@ Responsável: **TODO (grupo)**.
 
 ## Fase 5 — Relatório & análise (enunciado §4, NR)
 
-Um `report.qmd` (IEEE, `pdflatex`, Quarto 1.6.43 travado), escrito em
+Um `report/main.qmd` (IEEE, `pdflatex`, Quarto 1.6.43 travado), escrito em
 **pt-BR** (como toda a documentação do repositório), ordem estrita de seções
 do enunciado:
 
@@ -146,7 +146,7 @@ do enunciado:
       (capacidades variáveis — já é o núcleo do nosso modelo!, restrições
       2D/3D, métodos híbridos), reflexão sobre aprendizados/desafios.
 - [ ] Preencher os TODOs de título e bloco de autores.
-- [ ] Re-renderizar o `report.qmd` ponta a ponta após cada mudança de Quarto
+- [ ] Re-renderizar o `report/main.qmd` ponta a ponta após cada mudança de Quarto
       ou texlive (pacote LaTeX faltando → adicionar exatamente aquele em
       `texlive.withPackages` no `devenv.nix`, conforme `AGENTS.md`; módulo
       Python faltando → `requirements.txt`).

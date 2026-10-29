@@ -20,6 +20,31 @@ Os cinco casos de uso nomeados no enunciado foram usados como palavras-chave:
 
 ---
 
+## Decisão (2026-10): troca do dataset primário
+
+O dataset de frete (`omarstat2/supply-chain-logistics-data`) foi **substituído**
+como instância primária pelo **Large-Scale Route Optimization**
+(`mexwell/large-scale-route-optimization`, licença MIT). Motivo: a tabela
+tarifária do frete é **internamente incoerente** — o `minimum cost` (piso) fica
+abaixo do preço implícito do próprio piso da faixa em **78% das classes**
+($\beta_k = f_k/R_k \le l_k$ em 1.198 de 1.540; mediana
+$f_k/(R_k\,l_k) = 0{,}09$), concentrado em `V444_4` (900 classes, mediana 0,06,
+com `minimum cost − rate` inteiro em 83% das linhas) e em `V444_1`. O dataset
+de frete permanece documentado abaixo como **estudo de caso de inconsistência
+de dados**, não como instância de empacotamento.
+
+O novo dataset é **coerente por construção**: 4 tipos de caminhão com
+capacidade bidimensional (área e peso) e custo por km explícito e monotônico.
+Números verificados na seção "Large-Scale Route Optimization".
+
+**Links do novo dataset:**
+
+- Kaggle: <https://www.kaggle.com/datasets/mexwell/large-scale-route-optimization>
+- Repositório de origem (dados + código da frota, MIT):
+  <https://github.com/microsoft/dstoolkit-route-optimization>
+
+---
+
 ## 0. Referência sintética — _Pick and Place Binning Dataset_ (default atual)
 
 |             |                                                                                                                                                           |
@@ -44,7 +69,7 @@ como validação).
 
 ## 1. Alocação de Cargas em Veículos (truck/container loading)
 
-### 🟢 Supply Chain Logistics Optimization Dataset — _benchmark real de pesquisa_
+### 🔴 Supply Chain Logistics Optimization Dataset — _estudo de caso (instância primária até 2026-10)_
 
 - **Fonte:**
   [Kaggle `omarstat2/supply-chain-logistics-data`](https://www.kaggle.com/datasets/omarstat2/supply-chain-logistics-data)
@@ -107,20 +132,123 @@ como validação).
   | (CRF: 714 + 1 + 139 = 854 pedidos) | excluídos | 0 linhas |
   O único pedido de `PORT05→PORT09` é CRF, então não há instância tarifada.
 
-### 🟢 Large-Scale Route Optimization (Microsoft solution accelerator)
+**Por que deixou de ser a instância primária (verificado 2026-10).** A coluna
+`minimum cost` é um piso inatingível na maior parte da tabela: $\beta_k =
+f_k/R_k \le l_k$ em **1.198 de 1.540 classes (78%)** (mediana $\beta/l =
+0{,}067$) e $\beta_k \ge C_k$ em apenas 167. Em **65,9% das linhas** a
+diferença `minimum cost − rate` é um inteiro, indício de artefato de geração;
+por carrier, a mediana de $f/(R\,l)$ é **0,06 em `V444_4`** (900 classes),
+1,03 em `V444_6` e 1,28 em `V444_9`. Há ainda dois problemas estruturais:
+`PORT09→PORT09`×DTP é **100% GROUND** (janela única `[0, 5000]`, tarifa por
+caminhão, regra 2 da Fig. 3) e a tabela de `V444_4` tem `rate` **crescente**
+com o peso (Spearman $\rho = +0{,}85$), contra a premissa de desconto por
+volume. Consequência: o modelo só-fee vira limite inferior (~7% do custo real)
+e as instâncias ficam degeneradas (uma reserva absorve tudo).
 
-- **Fonte:**
-  [Kaggle `mexwell/large-scale-route-optimization`](https://www.kaggle.com/datasets/mexwell/large-scale-route-optimization)
-- **Relaciona:** alocação item→caminhão; itens carregam `Area (m²)` e
-  `Weight (kg)`; 3 tipos de caminhão com capacidade nas duas dimensões (16.5
-  m: 10.000 kg / 16.1×2.5 m², 12.5 m: 5.000 kg / 12.1×2.5 m², 9.6 m: 2.000 kg
-  / 9.1×2.3 m²).
-- **Mapeamento BPP:** formalmente uma variante VRP/VRPPD; **ignorando
-  roteirização/prazos/deadlines**, o _núcleo puro de bin packing_ é exatamente
-  o modelo do enunciado (itens com wᵢ, caixas heterogêneas com capacidade D).
-  Caixas de capacidade heterogênea ($C_j$ variando por tipo de caminhão) são
-  uma generalização fácil da fórmula de C constante do enunciado — um detalhe
-  que vale sinalizar na narrativa "o que generalizamos" do relatório.
+### 🟢 Large-Scale Route Optimization — **dataset primário (decidido 2026-10)**
+
+- **Fonte:** [Kaggle `mexwell/large-scale-route-optimization`](https://www.kaggle.com/datasets/mexwell/large-scale-route-optimization)
+  (MIT). O material original é o *solution accelerator* da Microsoft,
+  [`microsoft/dstoolkit-route-optimization`](https://github.com/microsoft/dstoolkit-route-optimization)
+  (MIT), de onde os dados e a tabela de frota foram transcritos.
+- **Arquivos versionados em `data/raw/`:**
+
+  | Arquivo | Conteúdo |
+  |---|---|
+  | `order_small.csv` | 10 itens, 5 pedidos, 2 pares origem–destino |
+  | `order_large.csv` | **4.635 itens**, 365 pedidos, **61 pares O–D** |
+  | `distance.csv` | matriz de distâncias entre cidades (metros) |
+  | `trucks.csv` | frota (4 tipos), transcrita de `src/core/structure.py` |
+
+- **Unidades:** `Area` e `Weight` vêm escalados por $10^4$ (dividir por 10.000
+  dá m² e kg). Ex.: `Area=38.880` → 3,888 m²; `Weight=30.920.000` → 3.092 kg.
+- **Frota (o código é autoritativo; o README está desatualizado):**
+
+  | Tipo | Área | Peso | Custo/km | $/m² | $/kg |
+  |---|---|---|---|---|---|
+  | 16,5 m | 40,25 m² | 27.000 kg | 10,0 | 0,248 | 0,00037 |
+  | 12,5 m | 30,25 m² | 24.000 kg | 9,0 | 0,298 | 0,00038 |
+  | 9,6 m | 20,93 m² | 14.000 kg | 6,5 | 0,311 | 0,00046 |
+  | 7,6 m | 16,56 m² | 8.000 kg | 5,5 | 0,332 | 0,00069 |
+
+- **Estatísticas verificadas:** área 0,64–9,72 m² (mediana 1,25); peso
+  46–3.130 kg (mediana 1.000); nenhum item excede a maior caixa. Densidade
+  mediana dos itens **797 kg/m²** contra 671/793/669/483 kg/m² das caixas —
+  ou seja, **a área morde antes do peso** em parte das rotas.
+- **Mapeamento VSBPP:** para uma rota fixa $(o,d)$, cada caminhão custa
+  $c_t \times \mathrm{dist}(o,d)$ e oferece capacidade $(A_t, W_t)$ → **VSBPP
+  bidimensional com 4 classes de caixa e custo explícito**. Exemplo
+  `City_61→City_58` (1.754 km): 468 itens, 1.163 m², 418 t; 16 caminhões por
+  peso, **29 por área**, com custo por caminhão de 17.545 / 15.790 / 11.404 /
+  9.650.
+- **Ressalvas:** o dataset é uma **amostra publicada** "inspirada em um cenário
+  real" de um cliente de manufatura — não é dado bruto da empresa. O README do
+  repositório lista 3 tipos de caminhão com capacidades diferentes das do
+  código (10/5/2 t vs 27/24/14/8 t); **usar o código**. As colunas
+  `Danger_Type`, `Available_Time` e `Deadline` permitem extensões
+  (incompatibilidade entre itens, janelas de tempo), ignoradas no núcleo BPP.
+
+#### Instâncias geradas (verificado 2026-10)
+
+| Dimensão | Quantidade |
+|---|---|
+| Cidades | **62** (`City_61` = CD único + 61 destinos) |
+| Itens | **4.635** (365 pedidos, ~12,7 itens/pedido) |
+| Classes de caixa | **4** (16,5 / 12,5 / 9,6 / 7,6 m) |
+| Tempo | 3 dias de disponibilidade; 10 janelas de 4 h; 22 timestamps; prazos em 8 dias |
+
+Recorte adotado: **rota × dia de disponibilidade**.
+
+| Recorte | Instâncias não vazias |
+|---|---|
+| rota (sem fatiar tempo) | 61 |
+| **rota × dia** | **111** (de 183 combinações) |
+| rota × janela de 4 h | 125 |
+| rota × timestamp | 133 |
+
+Tamanhos (rota × dia): mediana **31 itens**, p90 86, máx **198**; 23 instâncias
+com 1–10 itens, 49 com 11–50, 30 com 51–100, 9 com mais de 100. Todos os itens
+cabem no menor caminhão (9,72 m² ≤ 16,56 m²; 3.130 kg ≤ 8.000 kg) → **as 4
+classes são factíveis em toda instância**.
+
+#### Escopo: viagem direta × VRP
+
+O modelo resolve o **subproblema de carregamento de uma rota** $(o,d)$ com
+viagem direta. Isso é uma **política**, não o ótimo do VRP:
+
+- **O custo é limite superior** do VRP: proibimos multi-drop (um caminhão
+  servindo vários destinos). A carga **não** troca de veículo — transbordo não
+  existe no dado.
+- **Impacto medido:** a política direta usa **280 caminhões** de 16,5 m contra
+  **234** do *pooled bound* (**+16,4%**). Nas 18 rotas que precisam de exatamente
+  1 caminhão, um matching de pares (rotas de 2 paradas) economiza **7.337 km de
+  19.944 km (36,8%)** — ótimo exato por matching de peso máximo; o guloso dá
+  7.286 km (36,5%).
+- **Pooled bound:** relaxação que ignora os destinos,
+  $\max(\lceil \sum_i a_i/A\rceil, \lceil \sum_i w_i/W\rceil)$. Limita o
+  **número de caminhões** (não o custo, pois ignora distâncias). Intervalo:
+  **234 ≤ VRP ≤ 280**.
+- O acelerador cobra **500 por parada**, desprezível frente aos milhares de km.
+
+#### Trivialidade do empacotamento (FFD 2D vs limite inferior, por rota)
+
+| Caminhão | FFD = LB | gap ≥ 2 | maior gap |
+|---|---|---|---|
+| 16,5 m | **55/61** | 0 | **1** |
+| 12,5 m | 50/61 | 2 | 2 |
+| 9,6 m | 46/61 | 5 | 12 |
+| 7,6 m | 32/61 | 16 | 18 |
+
+Com o caminhão grande o empacotamento é **trivial** (o maior item ocupa 24% da
+área e 12% do peso); o valor econômico do VSBPP está na **escolha do tipo** —
+18 rotas são servidas por um caminhão menor, com economia mediana de **45%**.
+
+#### `Danger_Type`
+
+4.239 `type_1`, 357 `non_danger`, 39 `type_2`. A regra do acelerador proíbe
+`type_1` e `type_2` no mesmo caminhão (`non_danger` é neutro), mas **nenhuma das
+61 rotas contém os dois tipos perigosos** → a restrição é **vacuamente
+satisfeita** na decomposição por rota. Só passaria a morder num VRP multi-parada.
 
 ### 🟢 Cross-Border E-commerce Logistics Data (China)
 
@@ -309,27 +437,20 @@ como validação).
 
 ## 6. Conduta recomendada para o grupo
 
-1. **Dataset real primário:** escolher um caso de uso e pareá-lo com seu
-   melhor candidato:
-   - carga → `supply-chain-logistics-data` (OrderList → caminhões)
-   - consolidação de VMs → `AzureTracesForPacking2020` (feito para isso;
-     também o enquadramento mais fácil)
-   - backup → walk de sistema de arquivos do LANL + capacidades industriais
-     do PetaStore
-   - armários de lab → Zenodo rack-loading (catálogo Hoare & Beasley) +
-     tamanhos de auditorias de lab publicadas
-   - paginação de provas → **dataset ENEM 2022–2024** (o mais contextual
-     brasileiro e autocontido de explicar)
-2. **Manter o `pick-and-place-binning-dataset` sintético** como _"benchmark
-   controlado"_ (tem baselines greedy! fórmula 1D limpa) justamente porque
-   todo candidato real acima precisa de pré-processamento.
-3. **Narrativa híbrida do relatório (menos surpresas):** desenvolver e calibrar
-   nas instâncias sintéticas → depois aplicar o pipeline em muitas instâncias
-   reais (p.ex. questões do ENEM ou requisições de VM via o pré-processamento
-   do ator A3) como **conjunto de validação**, e dizer isso explicitamente no
-   relatório. Combina com a Fase 2 do `TODO.md` (normalizar para instâncias
-   com `w_i` / `C` comuns) e mantém as comparações de ambos os solvers +
-   heurística vs bound `L2` uniformes.
+1. **Dataset primário (decidido 2026-10):** `mexwell/large-scale-route-optimization`
+   (MIT; dados e frota de `microsoft/dstoolkit-route-optimization`) — VSBPP
+   bidimensional com 4 tipos de caminhão, custo por km explícito e dados
+   coerentes. Instâncias por rota $(o,d)$; escada: `order_small` (10 itens) →
+   rotas de ~50–250 itens → `City_61→City_58` (468) → `order_large` (4.635).
+2. **Dataset de escala (BPP puro):** `AzureTracesForPacking2020` — 5,56 M
+   requisições de VM, ~860 mil vivas por instante, caixas homogêneas
+   (capacidade 1,0) e **sem custo**; serve para heurísticas/bounds, não para o
+   argumento de custo variável.
+3. **Benchmark controlado:** `pick-and-place-binning-dataset` sintético, se
+   acessível, pelas baselines greedy já publicadas.
+4. **Estudo de caso (não instância):** o dataset de frete permanece como
+   análise de inconsistência tarifária (ver a seção "Supply Chain Logistics"),
+   útil para justificar a troca e para exercitar validação de dados.
 
 **Nota de proveniência:** todos os links acima foram verificados como
 publicamente disponíveis no momento da escrita (out 2026); consolide-os em

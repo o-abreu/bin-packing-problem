@@ -12,6 +12,10 @@ devenv.local.yaml
 # Course documents (local only)
 Projeto_PM_BCC_2026.pdf
 
+# Python bytecode
+__pycache__/
+*.pyc
+
 # Generated report artifacts
 output/
 

@@ -38,12 +38,12 @@
 
   # https://devenv.sh/scripts/
   scripts.render-report.exec = ''
-    # report.qmd -> output/ (PDF IEEE via pdflatex; quarto 1.6.43 travado).
+    # report/main.qmd -> output/ (PDF IEEE via pdflatex; quarto 1.6.43 travado).
     # QUARTO_PYTHON fixado no interpretador do venv do projeto — o quarto usa
     # esse kernel para executar os chunks; o venv tem nbclient/nbformat
     # porque o kernel runner precisa deles.
     export QUARTO_PYTHON="$(command -v python)"
     mkdir -p output
-    quarto render report.qmd --output-dir output
+    quarto render report/main.qmd --output-dir output
   '';
 }
