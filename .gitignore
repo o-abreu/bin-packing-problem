@@ -21,3 +21,7 @@ output/
 
 /.quarto/
 **/*.quarto_ipynb
+
+# Gurobi
+gurobi.log
+gurobi.lic

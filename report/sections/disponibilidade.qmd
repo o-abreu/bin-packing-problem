@@ -1,0 +1,11 @@
+# Disponibilidade de dados e código
+
+Os dados brutos utilizados estão versionados em `data/raw/`, sem modificação em
+relação às fontes originais, e são distribuídos sob licença MIT pelo espelho no
+Kaggle [@routeopt2026] e pelo repositório de origem [@routeopt2022]. O código de
+modelagem e de solução, os scripts de geração de instâncias e de benchmark
+(`scripts/`), o registro de experimentos e o código-fonte deste relatório
+(Quarto) estão disponíveis em <https://github.com/o-abreu/bin-packing-problem>.
+O ambiente computacional é declarativo (Nix e devenv), o que fixa as versões de
+Python, dos solvers, do Quarto e da distribuição LaTeX usada na compilação: as
+tabelas e os números relatados são reprodutíveis a partir do repositório.

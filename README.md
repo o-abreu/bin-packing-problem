@@ -1,11 +1,12 @@
 # Bin Packing Problem (BPP) — SME 0110 · Programação Matemática
 
-> **Provisional project description** — subject to refinement as the project evolves.
+> Work in progress — the phased plan is in [`TODO.md`](./notes/TODO.md) and what has
+> already been measured is in [`EXPERIMENTOS.md`](./notes/EXPERIMENTOS.md).
 
 ## Project
 
 Implementation of the **Bin Packing Problem** (*Problema do Empacotamento*) for the
-course **SME 0110 – Programação Matemática** (IME-USP, 2nd semester 2026), applied to a
+course **SME 0110 – Programação Matemática** (ICMC-USP, 2nd semester 2026), applied to a
 real-world scenario following the official assignment
 ([`Projeto_PM_BCC_2026.pdf`](./Projeto_PM_BCC_2026.pdf)).
 
@@ -21,47 +22,116 @@ The work requires, per group:
 ## Chosen scenario
 
 **Alocação de Cargas em Veículos / Contêineres** — minimize the number of
-trucks/containers needed to transport a set of goods with limited weight/volume
-capacity. This maps 1:1 onto the generic BPP MILP from the assignment brief
-(items = boxes; bins = trucks with capacity `C`):
+trucks/containers needed to transport a set of goods under limited floor area and
+weight. The assignment's generic BPP MILP
 
 $$\min \sum_{j \in J} y_j \quad \text{s.t.} \quad \sum_{j} x_{ij} = 1 \;\; \forall i, \qquad \sum_{i} w_i x_{ij} \le C y_j \;\; \forall j$$
 
-**Dataset (provisional choice):** [Supply Chain Logistics Optimization Dataset](https://www.kaggle.com/datasets/omarstat2/supply-chain-logistics-data)
-(Brunel University London research data) — 9,215 real customer orders with weights,
-units and shipping dates; BPP mapping: items = order lines, `w_i` = order weight,
-bins = trucks/containers with capacity `C` set by the freight weight brackets.
-**Tentative — we may switch datasets later.** Research and alternatives:
-[`DATASETS.md`](./DATASETS.md).
+is generalized in the two directions the real instance forces:
+
+- **variable-sized bins with a cost (VSBPP):** the bins are four truck classes,
+  each with floor area $A_t$, weight capacity $W_t$ and a cost $C_t$ per
+  kilometre, so the objective is the cost of the fleet
+  ($C_t \times \mathrm{dist}(o,d)$ per truck), not the number of trucks;
+- **two dimensions:** a truck is loaded only if it respects **both** area and
+  weight, which makes the instance a two-dimensional vector packing problem —
+  and, in these data, area is the binding resource more often than weight.
+
+**Dataset:** [Large-Scale Route
+Optimization](https://www.kaggle.com/datasets/mexwell/large-scale-route-optimization)
+(MIT), the sample data of Microsoft's route-optimization accelerator
+([`microsoft/dstoolkit-route-optimization`](https://github.com/microsoft/dstoolkit-route-optimization)),
+committed to `data/raw/`: **4,635 packages** over 365 orders, **61
+origin–destination pairs** out of a single distribution centre (`City_61`), and a
+fleet of four truck types. `Area` and `Weight` come scaled by $10^4$;
+`distance.csv` is in metres. It is a **published sample** "inspired by a
+real-world scenario" of a manufacturing customer, not raw company data.
+
+**Scope:** we solve the *loading* subproblem under a **direct-trip policy** (one
+stop per trip), so each route becomes an independent VSBPP instance and its
+optimum is an **upper bound** on the cost of the underlying VRP — not the VRP
+optimum.
+
+The freight-tariff dataset used earlier in the project was dropped as the primary
+instance — its `minimum cost` column places the floor below the implied price in
+78% of the classes — and remains documented as a case study of inconsistent
+data. Research, provenance and column-by-column notes:
+[`DATASETS.md`](./notes/DATASETS.md).
 
 ## Assignment & schedule
 
 Requirements, grading breakdown, and dates are specified in the official assignment
 (`Projeto_PM_BCC_2026.pdf` — kept locally, not tracked in this repository) and in the
-work plan [`TODO.md`](./TODO.md).
+work plan [`TODO.md`](./notes/TODO.md).
 
-## Repository layout (planned)
+## Report
+
+The deliverable is `report/main.qmd` — an IEEE two-column article written in
+pt-BR, whose body is assembled from included files:
 
 ```
-data/        # BPP instances (Kaggle-derived buckets + preprocessed real set) & provenance
-src/         # parsers, MILP models (Gurobi/PySCIPOpt), heuristics (FFD/BFD, SA), harness
-report/      # LaTeX report sources (`relatorio.pdf` is the final artifact)
-work/        # scratch: solver logs, intermediate analyses
+report/
+├── main.qmd                      # front matter + includes, nothing else
+├── refs.bib
+├── _extensions/ieee/             # vendored journal format (must sit next to main.qmd)
+└── sections/
+    ├── introducao.qmd            # I. Introdução
+    ├── disponibilidade.qmd       # data and code availability
+    ├── declaracao-uso-ia.qmd     # AI-use declaration
+    ├── experimento.qmd           # draft, not included yet
+    └── metodologia/
+        ├── index.qmd             # II. Metodologia + the two includes below
+        ├── base-de-dados.qmd     # fleet, instance statistics, 3 figures
+        └── modelagem-matematica.qmd  # MILP formulation (R1–R11)
+```
+
+Include paths are resolved **relative to `main.qmd`**, even when nested — that is
+why `metodologia/index.qmd` writes `sections/metodologia/base-de-dados.qmd`
+rather than a path relative to itself.
+
+```sh
+devenv shell -- render-report   # writes report/output/main.pdf
+```
+
+Status of the five sections mandated by the assignment (§4): Introdução ✅,
+Modelagem Matemática ✅ (as II.B), Solução via *Solvers* ⬜, Método de Solução
+Alternativo ⬜, Conclusão ⬜ — see [`TODO.md`](./notes/TODO.md) phases 3–5.
+
+## Repository layout
+
+```
+data/raw/          # dataset as published (MIT) — tracked, never re-fetched
+notes/             # DATASETS.md, TODO.md, EXPERIMENTOS.md (research + plan + results)
+report/            # Quarto sources for the article (see above)
+scripts/           # experiment harnesses (symmetry-breaking benchmarks)
+AGENTS.md          # guidance for coding agents
+devenv.nix/.yaml   # declarative environment; pyrightconfig.json for type checking
 ```
 
 ## Environment
 
-The development environment is declaratively managed with
-[devenv](https://devenv.sh) (Nix):
+Declaratively managed with [devenv](https://devenv.sh) (Nix), with direnv
+integration:
 
 ```sh
-devenv shell        # enter the environment (git, python toolchain…)
+direnv allow                     # or: devenv shell
+devenv shell -- render-report    # report/main.qmd -> report/output/main.pdf
 ```
 
-Solver dependencies (`gurobipy` with academic license, `PySCIPOpt` + SCIP binary)
-are being set up per [`TODO.md`](./TODO.md) Phase 0.
+- **Quarto 1.6.43**, pinned through the `nixpkgs-quarto` input — the vendored IEEE
+  extension is built against 1.5/1.6.
+- **PDF engine `pdflatex`** with TeX Live from the flake (IEEEtran, orcidlink,
+  physics, mhchem). Quarto whitelists only pdflatex/xelatex/lualatex/latexmk.
+- **Python venv** at `.devenv/state/venv` with `pulp` (CBC), `highspy`, `gurobipy`,
+  `pandas`, `matplotlib`, `pandas-stubs`. `devenv.nix` exports `QUARTO_PYTHON`
+  pointing at that interpreter, so the notebook chunks always run in the venv.
+- **Solvers:** HiGHS and CBC are available out of the box. Gurobi needs the
+  academic licence file (`gurobi.lic`, gitignored) and was **unavailable** at the
+  last recorded run — the assignment asks for one commercial and one free solver,
+  so this is tracked as a risk in [`TODO.md`](./notes/TODO.md) phase 3.
 
 ## License
 
 Academic coursework — all rights reserved to the group members until submission.
-Dataset licensing is documented in `data/README.md` (to be created in Phase 2).
+Dataset licensing (MIT) and provenance are documented in
+[`DATASETS.md`](./notes/DATASETS.md).

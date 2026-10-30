@@ -19,7 +19,7 @@ O dataset está commitado no repositório sob `data/raw/` (sete tabelas
 relacionais espelhadas da cópia pública `Eden1029/SQL_SupplyChainLogistics` do
 dataset Kaggle/Figshare @dataset2026 — mesmo esquema e mesmas contagens de
 linhas: `OrderList` 9{,}215 × 14, `FreightRates` 1{,}540 × 11). Nenhuma etapa de
-obtenção é necessária; a proveniência está documentada em `DATASETS.md`.
+obtenção é necessária; a proveniência está documentada em `notes/DATASETS.md`.
 
 ```python
 #| label: load
@@ -233,5 +233,5 @@ coincide com o ótimo aqui (tensão de 100%).
 A formulação VSBPP declarada para uma tabela de tarifas real agora é executável
 de ponta a ponta: reservas precificadas por bracket, normalização lb/kg, poda de
 classes dominadas e solução exata em instâncias pequenas. Os próximos passos
-estão fixados no `TODO.md`.
+estão fixados no `notes/TODO.md`.
 

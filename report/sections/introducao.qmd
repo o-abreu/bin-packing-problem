@@ -1,0 +1,90 @@
+# Introdução
+
+O custo de uma cadeia de suprimentos é decidido, em boa parte, pela
+**composição da carga**: quantos veículos partem, de que tamanho, e com qual
+fração de sua capacidade ocupada. Consolidar pacotes que seguem a mesma origem
+e o mesmo destino em menos viagens é, por isso, uma das alavancas operacionais
+mais diretas de custo — e uma das mais difíceis, porque o número de planos de
+carregamento cresce de forma combinatória com o número de pacotes. A literatura
+de pesquisa operacional trata essa decisão como um problema de otimização
+combinatória: Dzalbs e Kalganova aplicaram colônia de formigas à consolidação
+de pedidos em reservas de frete de uma tabela tarifária real [@dzalbs2020], e
+aceleradores industriais de roteirização transformam o mesmo núcleo combinatório
+em produto, resolvendo instâncias de milhares de pedidos [@routeopt2022;
+@routeopt2026]. Sob a terminologia logística, o que esses trabalhos enfrentam é
+um **problema de empacotamento**.
+
+Formalmente, o problema do empacotamento em caixas (_bin packing problem_, BPP)
+distribui itens de tamanho $w_i$ em caixas de capacidade $C$, minimizando o
+número de caixas utilizadas. É NP-difícil [@karp1972; @garey1979], de modo que
+não se pode esperar um algoritmo exato polinomial no pior caso. O que a teoria
+oferece são garantias de aproximação — a heurística _first fit decreasing_
+(FFD) nunca usa mais que $11/9$ do ótimo assintoticamente [@dosa2007] — e
+limites inferiores apertados, que dão a régua para medir o quanto uma solução
+factível está longe do ótimo [@martello1990]. Em logística, essa régua é o que
+distingue uma política de carregamento defensável de uma simples regra de bolso.
+
+Na prática, porém, as caixas não são iguais: frotas são heterogêneas e o preço
+de uma viagem depende do tipo de veículo. Na variante de caixas de tamanho e
+custo variáveis (VSBPP), as caixas vêm em classes com capacidades e custos
+distintos e o objetivo passa a ser o custo total das caixas usadas
+[@friesen1986; @kang2003]; nas versões de custo generalizado, cada classe tem
+seu próprio custo e ainda assim existem esquemas de aproximação assintóticos
+[@murgolo1987; @epstein2008]. Essa é a variante que interessa a um operador
+logístico: a decisão não é "quantos caminhões", mas "**quais** caminhões".
+
+A isso soma-se uma dificuldade que o contexto físico impõe e que a literatura
+unidimensional não vê. Um caminhão oferece dois recursos escassos e
+independentes — área de piso e capacidade de peso —, e um carregamento só é
+viável se respeitar ambos; o problema é, portanto, um empacotamento vetorial
+bidimensional [@chekuri2004; @hu2018]. Empacotamento vetorial é estritamente
+mais difícil que o unidimensional: para duas ou mais dimensões não existe
+esquema de aproximação polinomial assintótico, a menos que P = NP
+[@woeginger1997], enquanto em uma dimensão ele existe tanto para o BPP clássico
+[@delavega1981; @karmarkar1982] quanto para o VSBPP [@murgolo1987;
+@epstein2008]. Não há, então, algoritmo com garantia de qualidade para o nosso
+caso: restam a programação inteira mista nas instâncias pequenas e heurísticas
+desenhadas para o domínio nas grandes.
+
+A programação inteira mista, por seu turno, cobra um preço próprio. Formulações
+de empacotamento são altamente simétricas — compartimentos são intercambiáveis
+—, e a simetria degrada tanto a relaxação linear quanto o _branch-and-bound_
+[@margot2010; @sherali2001]. A resposta consolidada na literatura é quebrar a
+simetria com restrições e técnicas dedicadas [@ostrowski2011; @kaibel2008],
+cujo efeito prático já foi medido no BPP unidimensional [@salem2020]. Boa parte
+do trabalho de modelagem relatado adiante está aí.
+
+A instância que estudamos vem do conjunto público _Large-Scale Route
+Optimization_, espelho em licença MIT do acelerador homônimo da Microsoft
+[@routeopt2022; @routeopt2026]. Ele descreve um cliente de manufatura que
+distribui pedidos a partir de um único centro de distribuição para 61 destinos
+e fornece a frota em quatro tipos de caminhão, cada um com área de piso,
+capacidade de peso e custo por quilômetro explícitos. São 4.635 pacotes em 365
+pedidos e 61 pares origem–destino, com pacotes de 0,64 a 9,72 m² e de 46 a
+3.130 kg — nenhum excede o menor caminhão. Trata-se de uma **amostra
+publicada**, declarada pelos autores como "inspirada em um cenário real" de um
+cliente de manufatura, e não de dados brutos da empresa; isso basta para o
+exercício, mas precisa ser dito.
+
+O acelerador resolve o problema de roteirização de veículos (VRP), no qual um
+caminhão atende várias paradas. Aqui adotamos a política oposta: **viagem
+direta**, uma parada por viagem. Com isso o roteamento degenera no carregamento
+de uma rota, cada par origem–destino vira uma instância independente de VSBPP,
+e o ótimo desse empacotamento passa a ser um **limite superior** para o custo
+do VRP — não o seu ótimo. A escolha é deliberada: isola a decisão de composição
+de frota, que é onde a modelagem tem algo a dizer, e deixa o ganho do
+compartilhamento de veículos como uma quantidade explícita a ser medida
+depois.
+
+Este trabalho persegue, então, quatro objetivos: (i) formular a consolidação de
+carga como um VSBPP bidimensional de custo fixo, declarando e justificando
+conjuntos, parâmetros, variáveis e restrições; (ii) resolvê-lo exatamente em
+instâncias pequenas com dois solvers — um comercial e um de código aberto —,
+reportando status, valor da função objetivo, tempo de processamento e gap de
+otimalidade, e discutindo a diferença de desempenho entre eles; (iii)
+implementar um método de solução alternativo (heurística construtiva e, para as
+instâncias maiores, meta-heurística); e (iv) comparar criticamente as duas
+abordagens quanto à qualidade da solução, ao esforço computacional e à
+aplicabilidade prática. A seção de Metodologia apresenta a base de dados e a
+formulação; as seções de solução via solvers, de método alternativo e de
+conclusão serão incorporadas à medida que os experimentos forem concluídos.

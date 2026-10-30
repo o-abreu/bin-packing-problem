@@ -1,8 +1,8 @@
 # TODO — Plano de Trabalho
 
-Plano por fases derivado do enunciado do curso [`Projeto_PM_BCC_2026.md`](./Projeto_PM_BCC_2026.md)
+Plano por fases derivado do enunciado do curso [`Projeto_PM_BCC_2026.md`](../Projeto_PM_BCC_2026.md)
 e anotado com as decisões já tomadas neste repositório (ver
-[`DATASETS.md`](./DATASETS.md) e o esqueleto [`report/main.qmd`](./report/main.qmd)).
+[`DATASETS.md`](./DATASETS.md) e o esqueleto [`report/main.qmd`](../report/main.qmd)).
 Consulte este arquivo antes de começar o trabalho; anote a qual fase uma
 mudança pertence nas mensagens de commit.
 

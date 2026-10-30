@@ -1,4 +1,4 @@
-"""Experimento de simetria do modelo VSBPP de `report/sections/modelagem-matematica.qmd`.
+"""Experimento de simetria do modelo VSBPP de `report/sections/metodologia/modelagem-matematica.qmd`.
 
 Compara três variantes do MILP sobre as mesmas instâncias:
 
@@ -43,11 +43,14 @@ def _identical_pairs(a, w, av, dl):
     return pairs
 
 
-def solve(a, w, av, dl, dist_km, variant, m=None, time_limit=120.0, pkg_order=False):
+def solve(a, w, av, dl, dist_km, variant, m=None, time_limit=120.0, pkg_order=False,
+          threads=None, gap=None):
     """Monta e resolve o MILP; devolve status, objetivo, nós e tempo.
 
     `pkg_order=True` acrescenta R11 (ordenação lexicográfica entre pacotes
-    idênticos), que só faz sentido se houver pacotes repetidos.
+    idênticos), que só faz sentido se houver pacotes repetidos. `threads` fixa o
+    número de threads do HiGHS (1 por processo é o que escala ao paralelizar
+    rotas); `gap` fixa o gap relativo de aceitação.
     """
     n, T = len(a), len(TRUCKS)
     m = m or n
@@ -70,7 +73,7 @@ def solve(a, w, av, dl, dist_km, variant, m=None, time_limit=120.0, pkg_order=Fa
             cost[iy(j, t)] = C[t]
     lb = np.zeros(nvar)
     ub = np.concatenate([np.ones(n * m + m * T), np.full(m, np.inf)])
-    if variant != "nosym":                # R9: x_ij = 0 para j > i
+    if variant in ("r9", "r9r10"):        # R9: x_ij = 0 para j > i
         for i in range(n):
             for j in range(i + 1, m):
                 ub[ix(i, j)] = 0.0
@@ -100,7 +103,7 @@ def solve(a, w, av, dl, dist_km, variant, m=None, time_limit=120.0, pkg_order=Fa
                 [(it(j), 1.0), (ix(i, j), M)])                          # R7
             row(-np.inf, dl[i] - t_trip + M,
                 [(it(j), 1.0), (ix(i, j), M)])                          # R8
-    if variant == "r9r10":
+    if variant in ("r10", "r9r10"):
         for j in range(m - 1):                                          # R10
             row(0.0, np.inf, [(iy(j, t), 1.0) for t in range(T)]
                 + [(iy(j + 1, t), -1.0) for t in range(T)])
@@ -112,6 +115,10 @@ def solve(a, w, av, dl, dist_km, variant, m=None, time_limit=120.0, pkg_order=Fa
     h = highspy.Highs()
     h.setOptionValue("output_flag", False)
     h.setOptionValue("time_limit", time_limit)
+    if threads is not None:
+        h.setOptionValue("threads", threads)
+    if gap is not None:
+        h.setOptionValue("mip_rel_gap", gap)
     h.addVars(nvar, lb, ub)
     h.changeColsCost(nvar, np.arange(nvar, dtype=np.int32), cost)
     h.changeColsIntegrality(

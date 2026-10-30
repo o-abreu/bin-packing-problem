@@ -1,4 +1,8 @@
 # yaml-language-server: $schema=https://devenv.sh/devenv.schema.json
+# gurobi (pkgs.gurobi) é unfree; devenv 2.x só expõe isso em nixpkgs.allow_unfree
+nixpkgs:
+  allow_unfree: true
+
 inputs:
   nixpkgs:
     url: github:cachix/devenv-nixpkgs/rolling

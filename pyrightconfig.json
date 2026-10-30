@@ -1,0 +1,8 @@
+{
+  "//": "Type checking for the Python inside the report (otter.nvim / basedpyright) and for scripts/.",
+  "venvPath": ".devenv/state",
+  "venv": "venv",
+  "typeCheckingMode": "basic",
+  "reportUnusedCallResult": false,
+  "reportMissingTypeStubs": false
+}

@@ -1,13 +1,21 @@
 {
+  config,
   pkgs,
   inputs,
   ...
 }: {
-  # https://devenv.sh/basics/
+  env = {
+    GRB_LICENSE_FILE = "${config.devenv.root}/gurobi.lic";
+    QUARTO_PYTHON = "${config.devenv.root}/.devenv/state/venv/bin/python";
+  };
 
   # https://devenv.sh/packages/
   packages = with pkgs; [
     git
+
+    # Gurobi comercial: gurobi_cl, grbgetkey (gera o gurobi.lic), libgurobi
+    # e headers. A licença não vem no pacote — ver "Licença" no README/AGENTS.
+    gurobi
 
     # quarto pinned to 1.6.43 (see devenv.yaml nixpkgs-quarto input):
     # the dfolio/quarto-ieee extension is built/tested against ~1.5/1.6;
@@ -33,7 +41,10 @@
     version = "3.12";
     venv.enable = true;
     venv.requirements = ./requirements.txt;
-    libraries = [pkgs.zlib]; # native libs needed by pip wheels (numpy/pandas links against libz.so.1)
+    libraries = [
+      pkgs.zlib # numpy/pandas wheels link against libz.so.1
+      pkgs.stdenv.cc.cc.lib # libstdc++/libgcc_s, exigidos pela libgurobi do wheel
+    ];
   };
 
   # https://devenv.sh/scripts/

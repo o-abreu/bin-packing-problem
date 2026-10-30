@@ -6,5 +6,8 @@ pyarrow          # fast parquet/csv IO
 ipykernel        # jupyter kernel for Quarto documents
 nbclient         # notebook execution engine used by `quarto render`
 nbformat         # notebook file format (nbclient dependency)
+pyyaml           # required by quarto's jupyter kernel runner (jupyter.py)
+pandas-stubs     # type stubs for pandas (basedpyright/LSP; not imported at runtime)
 pulp             # MILP modeling (bundled CBC backend)
 highspy          # HiGHS solver API (kept for scaling experiments)
+gurobipy==13.0.3 # Gurobi Python API — must match pkgs.gurobi (13.0.3) in devenv.nix

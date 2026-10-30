@@ -6,8 +6,9 @@ real freight logistics data).
 
 ## Language
 
-- **All repository documentation — `TODO.md`, `DATASETS.md`, the deliverable
-  report `report/main.qmd`, and any new workspace document — is written in
+- **All repository documentation — `notes/TODO.md`, `notes/DATASETS.md`, the
+  deliverable report `report/main.qmd`, and any new workspace document — is
+  written in
   Brazilian Portuguese (pt-BR) from now on**; updated sections must keep the
   language. Code, identifiers, and bibliography keys stay as-is.
 - `AGENTS.md` itself is kept in English (agent-facing guidance).
@@ -18,8 +19,9 @@ real freight logistics data).
 | Path | What it is |
 | --- | --- |
 | `Projeto_PM_BCC_2026.md` | Course brief (generic BPP formulation — the model must extend it) |
-| `DATASETS.md` | Dataset research; provenance and column-by-column annotations |
-| `TODO.md` | Phased plan — check it before starting work; note what phase a change belongs to |
+| `notes/DATASETS.md` | Dataset research; provenance and column-by-column annotations |
+| `notes/TODO.md` | Phased plan — check it before starting work; note what phase a change belongs to |
+| `notes/EXPERIMENTOS.md` | Measured results, protocol and caveats — read before re-deriving a number |
 | `report/main.qmd` + `report/refs.bib` | IEEE-formatted Quarto report/notebook (the deliverable) — `report/` is self-contained |
 | `report/_extensions/ieee/` | Vendored `dfolio/quarto-ieee` journal format extension (must sit next to `main.qmd`) |
 | `data/raw/*.csv` | Committed dataset files — **keep them tracked, never re-fetch or gitignore** |
@@ -105,7 +107,7 @@ has `nbclient`/`nbformat` because quarto's kernel runner needs them.
   its `minimum cost` sits below the implied floor price in 78% of classes
   (median $f/(R\,l)=0.09$), `V444_4` has a `rate` **increasing** with weight,
   and `PORT09→PORT09`×DTP is 100% GROUND with a different cost rule. See
-  `DATASETS.md`.
+  `notes/DATASETS.md`.
 
 ## Solver stack
 
@@ -114,7 +116,7 @@ has `nbclient`/`nbformat` because quarto's kernel runner needs them.
   $\sum_i x_{ij}=1$, $\sum_t y_{jt}\le 1$, $x_{ij}\le \sum_t y_{jt}$,
   $\sum_i a_i x_{ij} \le \sum_t A_t y_{jt}$ and
   $\sum_i w_i x_{ij} \le \sum_t W_t y_{jt}$ — to be restated in
-  `report/sections/modelagem-matematica.qmd`. The freight formulation R1–R6 with
+  `report/sections/metodologia/modelagem-matematica.qmd`. The freight formulation R1–R6 with
   the $\max(f, RW)$ epigraph is **legacy** (kept only for the case study).
 - **PuLP in the venv is 4.2.x**: `LpVariable.dicts`, `PULP_CBC_CMD` and
   `pulp.LpStatus` **no longer exist**. Use
@@ -127,7 +129,7 @@ has `nbclient`/`nbformat` because quarto's kernel runner needs them.
   later TODO phase.
 - **Caution:** `report/main.qmd` and its code still build lane-scoped classes
   (mixing both service levels) and interpret CRF orders as reassignable — the
-  (lane × svc) scoping and CRF exclusion above are recorded in `TODO.md`
+  (lane × svc) scoping and CRF exclusion above are recorded in `notes/TODO.md`
   Phase 2 but **not yet implemented** in the notebook; treat its rendered
   numbers as pre-decomposition.
 

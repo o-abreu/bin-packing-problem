@@ -1,0 +1,17 @@
+# Metodologia
+
+Esta seção descreve de onde vêm os números e como o problema é formulado. A
+primeira parte apresenta a base de dados, a frota e as instâncias que dela
+derivamos; a segunda declara o modelo de otimização inteira mista que será
+resolvido. O pré-processamento — normalização de unidades, filtragem e recorte
+das instâncias — será detalhado aqui assim que a engenharia de instâncias
+estiver fechada.
+
+<!-- TODO: acrescentar aqui a subseção de pré-processamento e engenharia de
+instâncias (ver TODO.md, Fase 2). -->
+
+<!-- As inclusões são resolvidas a partir do documento raiz (`main.qmd`), não
+     deste arquivo: daí o caminho completo a partir de `report/`. -->
+{{< include sections/metodologia/base-de-dados.qmd >}}
+
+{{< include sections/metodologia/modelagem-matematica.qmd >}}

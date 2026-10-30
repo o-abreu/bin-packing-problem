@@ -1,28 +1,41 @@
 ---
-title: "Bin Packing de Reservas de Frete com Custo Variável em uma Rota Logística: Uma Primeira Solução Exata"
+title: "Empacotamento de Pacotes em Frotas Heterogêneas: Modelagem VSBPP Bidimensional, Solução Exata e Método Alternativo sobre Dados Reais de Roteirização"
 authors:
-  - name: "TODO: Substituir Pelo Autor"
-    affiliation: "Instituto de Ciências Matemáticas e de Computação (ICMC), Universidade de São Paulo"
-    email: "author@usp.br"
+  - name: "Guilherme de Abreu Barreto"
+    orcid: "0009-0007-2701-2537"
+    note: "Instituto de Ciências Matemáticas e de Computação (ICMC), Universidade de São Paulo. Autor correspondente: de_abreu@usp.br. E-mails: eduda.agc@usp.br (E. A. G. de Carvalho); gabrielgaby@usp.br (G. Demba); nicholas.dan@usp.br (N. E. Dan); wiltordmosingi@usp.br (W. N. Mosingi)."
+  - name: "Eduarda Almeida Garrett de Carvalho"
+  - name: "Gabriel Demba"
+  - name: "Nicholas Eiti Dan"
+  - name: "Wiltord Nyakeruma Mosingi"
 abstract: |
-  Instanciamos um modelo de empacotamento de caixas com custo variável
-  (VSBPP) sobre dados reais de frete: o dataset "Supply Chain Logistics
-  Problem" da Brunel (pedidos, brackets tarifários e tarifas
-  multi-transportadora, hospedado no Kaggle). Para uma rota de envio, pedidos
-  são itens, reservas (*bookings*) são caixas, e classes tarifárias
-  (transportadora $\times$ serviço $\times$ bracket de peso) são classes de
-  caixa com capacidade $C_k$, carga mínima faturada $l_k$, taxa fixa $f_k$ e
-  tarifa por kg $R_k$ — o custo de um embarque é
-  $\max(f_k,\ R_k W)$, com o `minimum cost` atuando como piso.
-  Declaramos os domínios de dados, as variáveis, o objetivo e as restrições,
-  resolvemos uma instância pequena de forma exata e comparamos contra uma
-  heurística first-fit-decreasing e um limite inferior baseado em peso.
+  Consolidar pacotes em menos viagens é uma das alavancas de custo mais diretas
+  da distribuição física: em uma frota heterogênea, a decisão deixa de ser
+  "quantos compartimentos" e passa a ser "quantos caminhões de cada tipo", cada
+  um oferecendo dois recursos escassos — área de piso e peso — a um custo fixo
+  por viagem proporcional à distância da rota. Formulamos esse problema como um
+  empacotamento em caixas de tamanho e custo variáveis (VSBPP) bidimensional,
+  com custo fixo por caminhão, e o instanciamos sobre o conjunto público
+  *Large-Scale Route Optimization* (licença MIT), derivado do acelerador
+  homônimo da Microsoft: 4.635 pacotes distribuídos em 61 rotas a partir de um
+  único centro de distribuição e uma frota de quatro tipos de caminhão com
+  capacidade de área, capacidade de peso e custo por quilômetro explícitos.
+  Adotamos a política de viagem direta, que transforma cada rota em uma
+  instância independente de VSBPP e faz do ótimo do empacotamento um limite
+  superior para o custo do roteamento subjacente. O modelo é um programa linear
+  inteiro misto com restrições de quebra de simetria; o plano experimental
+  prevê solução exata por um solver comercial (Gurobi) e um de código aberto
+  (HiGHS), comparando status, valor da função objetivo, tempo de processamento
+  e gap de otimalidade, além de um método alternativo (heurística construtiva e
+  meta-heurística) para as instâncias de maior porte. Os resultados
+  experimentais estão em elaboração e serão incorporados à versão final.
 keywords: [
   bin packing,
   empacotamento com caixas de tamanho variável,
+  empacotamento bidimensional,
+  frota heterogênea,
   programação inteira mista,
-  logística,
-  consolidação de frete,
+  consolidação de carga,
 ]
 bibliography: refs.bib
 format:
@@ -35,65 +48,14 @@ jupyter: python3
 lang: pt-BR
 ---
 
-<!-- TODO antes da submissão: substituir o autor placeholder acima. -->
+<!-- TODO antes da submissão: revisar o bloco de autores (afiliação/departamento
+por extenso) e decidir a ordem de autoria. -->
 
-# Introdução
+{{< include sections/introducao.qmd >}}
 
-Bin packing empacota itens de tamanhos $w_i$ em caixas de capacidade $C$
-minimizando o número de caixas, e é NP-difícil @karp1972 @garey1979. Na
-**variante de caixas de tamanho (e custo) variável**, as caixas vêm em classes
-com capacidades e preços distintos, e o objetivo é o custo total das caixas
-usadas @friesen1986 @kang2003. Neste projeto as classes não são sintéticas: elas
-são _lidas de uma tabela de tarifas de frete real_, cada faixa transportadora
-$\times$ serviço $\times$ bracket de peso do Supply Chain Logistics Dataset
-@dataset2026.
+{{< include sections/metodologia/index.qmd >}}
 
-Para uma rota de envio $(o, d)$, uma **reserva** (_booking_; um envio de frete
-contratado junto a um serviço de transporte; o dataset não tem conceito de
-caminhões físicos, e o modo predominante é aéreo) desempenha o papel de caixa.
-Seu peso faturável deve cair dentro de um bracket tarifário: o teto do bracket é
-a capacidade da reserva e a sua tabela de preços cobra $\max(R_k\,w,\ f_k)$ — a
-tarifa por kg `rate` sobre o peso **total** do embarque, com piso no
-`minimum cost` do bracket. A otimização decide tanto o empacotamento quanto a
-classe de cada reserva; a atribuição de transportadora por pedido do dataset é
-uma baseline de entrada, não uma restrição (e uma transportadora, `V44_3`, fica
-sem tarifa nos dados e precisaria ser reatribuída de qualquer forma).
-
-# Dados e construção de instâncias
-
-## Fonte e esquema
-
-Sete tabelas relacionais @dataset2026; as relevantes aqui: `OrderList` (9{,}215
-pedidos; usamos `Origin Port`, `Destination Port`, `Carrier`, `Service Level`,
-`Unit quantity`, `Weight`) e `FreightRates` (1{,}540 linhas tarifárias; usamos
-carrier, `orig_port_cd`, `dest_port_cd`, `svc_cd`, `minm_wgh_qty`,
-`max_wgh_qty`, `minimum cost`, `rate`).
-
-## Pré-processamento
-
-1. **Normalização de unidades.** Os pesos dos pedidos são lidos em quilogramas.
-   Os brackets de algumas transportadoras são cotados em libras (limites
-   incrementados de exatamente 1 lb = 0.453592); seus limites são convertidos
-   para kg.
-2. **Construção de classes.** Por rota, as linhas de `FreightRates` geram
-   classes $k = (\text{carrier}, \text{service}, \text{bracket})$ com $C_k = $
-   `max_wgh_qty` (kg), $l_k = $ `minm_wgh_qty` (kg), $f_k = $ `minimum cost` e
-   $R_k = $ `rate` (US\$/kg).
-3. **Filtro de dominação de classes.** A classe $k$ é descartada quando outra
-   classe $k'$ tem $C_{k'} \ge C_k$, $f_{k'} \le f_k$ e $l_{k'} \le l_k$ — ela
-   nunca pode ser estritamente útil.
-4. **Pedidos de peso zero** (2 de 9{,}215) são _mantidos_: podem viajar em
-   qualquer reserva aberta a custo marginal zero e são pós-atribuídos após a
-   resolução.
-
-## Alegações de domínio usadas abaixo
-
-- $I$: pedidos da rota escolhida (pesos dos itens $w_i \ge 0$, kg).
-- $K$: classes tarifadas da rota (definição acima, após filtragem).
-- $J = \{1,\dots,n\}$: slots candidatos de reserva — nenhuma rota precisa de
-  mais reservas do que pedidos.
-
-{{< include sections/modelagem-matematica.qmd >}}
+{{< include sections/disponibilidade.qmd >}}
 
 {{< include sections/declaracao-uso-ia.qmd >}}
 

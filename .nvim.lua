@@ -8,3 +8,17 @@ local path = vim.env.PATH or ''
 if vim.fn.isdirectory(bin) == 1 and not path:find(bin, 1, true) then
   vim.env.PATH = bin .. ':' .. path
 end
+
+-- The profile's `python3` is a bare interpreter (no pandas/matplotlib) and the
+-- jupyter kernelspec Quarto picks runs plain `python` from PATH, so
+-- `:QuartoPreview` died on the report's plotting chunks. Point PATH, VIRTUAL_ENV
+-- and QUARTO_PYTHON at the project's venv (also used by the code runner).
+local venv = root .. '/.devenv/state/venv'
+if vim.fn.isdirectory(venv .. '/bin') == 1 then
+  local venv_bin = venv .. '/bin'
+  if not (vim.env.PATH or ''):find(venv_bin, 1, true) then
+    vim.env.PATH = venv_bin .. ':' .. vim.env.PATH
+  end
+  vim.env.VIRTUAL_ENV = venv
+  vim.env.QUARTO_PYTHON = venv_bin .. '/python'
+end
