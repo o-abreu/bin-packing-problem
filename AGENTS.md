@@ -127,11 +127,14 @@ has `nbclient`/`nbformat` because quarto's kernel runner needs them.
 - **HiGHS** (`highspy`) is also installed directly for scaling experiments.
 - Exact solves are for small instances (≤ ~30 items) for now; scaling is a
   later TODO phase.
-- **Caution:** `report/main.qmd` and its code still build lane-scoped classes
-  (mixing both service levels) and interpret CRF orders as reassignable — the
-  (lane × svc) scoping and CRF exclusion above are recorded in `notes/TODO.md`
-  Phase 2 but **not yet implemented** in the notebook; treat its rendered
-  numbers as pre-decomposition.
+- **Caution:** the report no longer runs the legacy lane-scoped code — the only
+  executable chunks are the three figures in
+  `report/sections/metodologia/base-de-dados.qmd` (route network, package
+  density, trucks per route), all computed from `data/raw/`. The (lane × svc)
+  scoping and CRF exclusion of the legacy case study are recorded in
+  `notes/TODO.md` Phase 2 and in `notes/DATASETS.md`; the legacy notebook draft
+  is `report/sections/experimento.qmd`, which is **not included** in `main.qmd`.
+  Treat its numbers as pre-decomposition.
 
 ## Writing & citations
 
@@ -156,7 +159,8 @@ has `nbclient`/`nbformat` because quarto's kernel runner needs them.
   `routeopt2026`). Zotero's parent view does not inherit subcollection items, so
   a dataset entry lives **only** in `Datasets`. Current counts: 19 + 4 = 23 =
   the number of `refs.bib` entries.
-- The author block in `report/main.qmd` is still a TODO placeholder.
+- The author block in `report/main.qmd` is filled in (five authors, ICMC-USP,
+  ORCID of the first); keep it in sync with the group if it changes.
 - Documentation and the report are written in **pt-BR** (see Language);
   this file stays in English.
 
