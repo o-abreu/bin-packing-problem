@@ -154,7 +154,7 @@ has `nbclient`/`nbformat` because quarto's kernel runner needs them.
   references, and the subcollection **`Datasets`** (key `B75NG9DP`) holds the
   data/software entries (`dataset2026`, `dzalbs2020`, `routeopt2022`,
   `routeopt2026`). Zotero's parent view does not inherit subcollection items, so
-  a dataset entry lives **only** in `Datasets`. Current counts: 14 + 4 = 18 =
+  a dataset entry lives **only** in `Datasets`. Current counts: 19 + 4 = 23 =
   the number of `refs.bib` entries.
 - The author block in `report/main.qmd` is still a TODO placeholder.
 - Documentation and the report are written in **pt-BR** (see Language);
