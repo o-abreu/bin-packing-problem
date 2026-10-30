@@ -18,7 +18,7 @@ real freight logistics data).
 
 | Path | What it is |
 | --- | --- |
-| `Projeto_PM_BCC_2026.md` | Course brief (generic BPP formulation — the model must extend it) |
+| `Projeto_PM_BCC_2026.md` | Course brief (generic BPP formulation — the model must extend it). **Local only**: gitignored, not distributed with the repository |
 | `notes/DATASETS.md` | Dataset research; provenance and column-by-column annotations |
 | `notes/TODO.md` | Phased plan — check it before starting work; note what phase a change belongs to |
 | `notes/EXPERIMENTOS.md` | Measured results, protocol and caveats — read before re-deriving a number |

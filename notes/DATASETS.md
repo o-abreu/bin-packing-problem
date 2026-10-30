@@ -1,7 +1,7 @@
 # Pesquisa de Datasets — Candidatos Reais por Caso de Uso
 
 Documento companheiro do [`TODO.md`](./TODO.md) (Fase 2) e do enunciado
-[`Projeto_PM_BCC_2026.md`](../Projeto_PM_BCC_2026.md). Cada dataset candidato é
+`Projeto_PM_BCC_2026.md` (arquivo local, não versionado). Cada dataset candidato é
 mapeado na **formulação genérica de BPP** do enunciado: itens $I$ com tamanhos
 $w_i$, caixas $J$ com capacidade $C$, decisão $x_{ij}$, $y_j$, objetivo
 $\min \sum_j y_j$.

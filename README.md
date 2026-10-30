@@ -7,8 +7,8 @@
 
 Implementation of the **Bin Packing Problem** (*Problema do Empacotamento*) for the
 course **SME 0110 – Programação Matemática** (ICMC-USP, 2nd semester 2026), applied to a
-real-world scenario following the official assignment
-([`Projeto_PM_BCC_2026.pdf`](./Projeto_PM_BCC_2026.pdf)).
+real-world scenario following the official assignment (course brief kept locally
+as `Projeto_PM_BCC_2026.{md,pdf}` and not distributed with this repository).
 
 The work requires, per group:
 
