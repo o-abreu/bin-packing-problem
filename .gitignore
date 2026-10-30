@@ -10,7 +10,7 @@ devenv.local.yaml
 .pre-commit-config.yaml
 
 # Course documents (local only)
-Projeto_PM_BCC_2026.pdf
+Projeto_PM_BCC_2026.*
 
 # Python bytecode
 __pycache__/
