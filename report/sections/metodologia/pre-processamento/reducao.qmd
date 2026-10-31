@@ -127,7 +127,7 @@ custo é válido mas frouxo — na maior instância (`{python} resumo["maior_id"
 `{python} resumo["maior_n"]` pacotes), a construção heurística usa
 `{python} resumo["maior_bins"]` caminhões e o teto permite
 `{python} resumo["maior_m"]` slots, num total de `{python} resumo["m_total"]`
-slots nas 111 instâncias. Nenhuma instância passa de
+slots nas `{python} resumo["instancias"]` instâncias. Nenhuma instância passa de
 `{python} resumo["maior_G"]` grupos.
 
 

@@ -1,0 +1,10 @@
+### Função objetivo
+
+$$\min \sum_{j \in J}\sum_{t \in T} C_t\ y_{jt} \tag{FO}$$
+
+Cada caminhão aberto custa o fixo da sua classe, $C_t = c_t\ d$; caminhões
+fechados não custam nada. Como $C_t$ não depende da carga, o objetivo é
+minimizar o **custo de frota**, e a consolidação reduz o número de veículos. O
+custo **não** cresce com a ocupação: para o mesmo tipo, encher um caminhão é
+sempre melhor que abrir outro — é o custo fixo clássico do VSBPP [@friesen1986;
+@kang2003].

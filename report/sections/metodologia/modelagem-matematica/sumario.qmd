@@ -1,0 +1,13 @@
+### Sumário do modelo
+
+De forma compacta, o modelo de otimização inteira mista é:
+
+$$
+\min \sum_{j \in J}\sum_{t \in T} C_t\ y_{jt}
+\quad \text{s.a.} \quad \text{R1–R10,}
+$$
+
+com $z_{gj} \in \lbrace0, \dots, n_g\rbrace$ inteiro, $u_{gj}, y_{jt} \in
+\lbrace0,1\rbrace$ e $\tau_j \ge 0$, e com $(G, T, J)$, $(n_g, a_g, w_g)$,
+$(A_t, W_t, C_t)$, $(av_g, dl_g)$, $t_{\text{viagem}}$ e $\Delta$ conforme
+declarado nas subseções anteriores.

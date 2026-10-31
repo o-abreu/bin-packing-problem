@@ -6,10 +6,13 @@ O conjunto é distribuído no Kaggle sob licença MIT [@routeopt2026] e é espel
 dos dados de amostra do acelerador da Microsoft [@routeopt2022]; os arquivos
 usados estão versionados em `data/raw/`:
 
-- `order_large.csv` — **4.635 pacotes** em 365 pedidos, distribuídos em **61
-  pares origem–destino**; é a instância principal;
-- `order_small.csv` — 10 pacotes em 5 pedidos e 2 pares origem–destino, usado
-  como caso de teste mínimo;
+- `order_large.csv` — **`{python} base["pacotes"]` pacotes** em
+  `{python} base["pedidos"]` pedidos, distribuídos em
+  **`{python} base["destinos"]` pares origem–destino**; é a instância principal;
+- `order_small.csv` — `{python} base["small_pacotes"]` pacotes em
+  `{python} base["small_pedidos"]` pedidos e
+  `{python} base["small_destinos"]` pares origem–destino, usado como caso de
+  teste mínimo;
 - `distance.csv` — matriz de distâncias entre cidades, **em metros** (apesar do
   nome da coluna, `Distance(M)`; é o que converte custo por km em custo por
   viagem);
@@ -26,21 +29,12 @@ neste relatório já estão convertidos para m² e kg. Das 20 colunas disponíve
 
 ```{python}
 #| include: false
-RAW = Path("../data/raw")  # o cwd de um chunk é o diretório do documento
-
-items = pd.read_csv(RAW / "order_large.csv")
-items["area_m2"] = items["Area"] / 1e4  # as colunas vêm escaladas por 10^4
-items["weight_kg"] = items["Weight"] / 1e4
-items["dens"] = items["weight_kg"] / items["area_m2"]
-
-trucks = pd.read_csv(RAW / "trucks.csv", comment="#")
-trucks["ratio"] = trucks["weight_capacity_kg"] / trucks["area_capacity_m2"]
-
+# As tabelas brutas já foram carregadas no setup do documento (`main.qmd`);
+# aqui só se preparam as grandezas e as posições usadas nas figuras.
 dens_med = items["dens"].median()
 dens_agg = items["weight_kg"].sum() / items["area_m2"].sum()
 
 # rede de rotas: matriz completa de distâncias (km) e posições em 2D
-dist = pd.read_csv(RAW / "distance.csv")
 cities = sorted(set(dist["Source"]) | set(dist["Destination"]))
 city_idx = {c: i for i, c in enumerate(cities)}
 D = np.zeros((len(cities), len(cities)))

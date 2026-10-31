@@ -6,44 +6,93 @@ parâmetros que, multiplicados pela distância da rota, dão o custo fixo de cad
 viagem. A tabela a seguir reúne esses valores e dois indicadores derivados que
 serão úteis na discussão do modelo.
 
-<!-- A extensão ieee não renderiza tabelas em markdown; esta é escrita em LaTeX
-     cru, como as tabelas da seção de modelagem. -->
+```{python}
+#| echo: false
+#| output: asis
+# A tabela é montada a partir de `trucks.csv` e emitida como LaTeX cru: a
+# extensão ieee não renderiza tabelas em markdown (viram longtable e não
+# compilam em duas colunas). `frota` guarda os mesmos números já formatados
+# em pt-BR, para o texto seguinte não repetir constantes à mão.
+custo_area = trucks["cost_per_km"] / trucks["area_capacity_m2"]
+custo_peso = trucks["cost_per_km"] / trucks["weight_capacity_kg"]
+densidade = dict(zip(trucks["truck_type"], trucks["ratio"]))
 
-\begin{table*}[!ht] \centering \begin{tabular}{@{}lrrrrrr@{}} \toprule
-Comprimento & $A_t$ (m$^2$) & $W_t$ (kg) & $C_t$ (US\$/km) & $C_t/A_t$
-(US\$/m$^2$) & $C_t/W_t$ (US\$/kg) & $W_t/A_t$ (kg/m$^2$) \\ \midrule 16,5 m &
-40,25 & 27.000 & 10,00 & 0,248 & 0,00037 & 671 \\ 12,5 m & 30,25 & 24.000 & 9,00
-& 0,298 & 0,00038 & 793 \\ 9,6 m & 20,93 & 14.000 & 6,50 & 0,311 & 0,00046 & 669
-\\ 7,6 m & 16,56 & 8.000 & 5,50 & 0,332 & 0,00069 & 483 \\ \bottomrule
-\end{tabular} \caption{Frota do conjunto \textit{Large-Scale Route
-Optimization}: capacidade de área e de peso, custo por quilômetro e indicadores
-derivados. Custos calculados a partir de \texttt{cost\_per\_km} e capacidades de
-\texttt{area\_capacity\_m2} e \texttt{weight\_capacity\_kg} de
-\texttt{trucks.csv}; o comprimento identifica a classe.} \label{tab-frota}
-\end{table*}
+frota = {
+    "ca_pior": ptbr(custo_area.max(), 3),
+    "ca_pior_tipo": ptbr(trucks.loc[custo_area.idxmax(), "truck_type"], 1),
+    "ca_melhor": ptbr(custo_area.min(), 3),
+    "ca_melhor_tipo": ptbr(trucks.loc[custo_area.idxmin(), "truck_type"], 1),
+    "cw_pior": ptbr(custo_peso.max(), 5),
+    "cw_pior_tipo": ptbr(trucks.loc[custo_peso.idxmax(), "truck_type"], 1),
+    "cw_melhor": ptbr(custo_peso.min(), 5),
+    "cw_melhor_tipo": ptbr(trucks.loc[custo_peso.idxmin(), "truck_type"], 1),
+    "dens_125": ptbr(densidade[12.5]),
+    "dens_165": ptbr(densidade[16.5]),
+    "dens_165_tipo": ptbr(max(densidade), 1),
+    "dens_96": ptbr(densidade[9.6]),
+    "dens_76": ptbr(densidade[7.6]),
+    "dens_mediana": ptbr(dens_med),
+    "dens_agregada": ptbr(dens_agg),
+    "item_peso_max": ptbr(items["weight_kg"].max()),
+    "item_area_max": ptbr(items["area_m2"].max(), 2),
+    "caminhao_area_max": ptbr(trucks["area_capacity_m2"].max(), 2),
+    "caminhao_peso_max": ptbr(trucks["weight_capacity_kg"].max()),
+}
+
+linhas = [
+    f"{ptbr(r.truck_type, 1)} m & {ptbr(r.area_capacity_m2, 2)} & "
+    f"{ptbr(r.weight_capacity_kg)} & {ptbr(r.cost_per_km, 2)} & "
+    f"{ptbr(r.cost_per_km / r.area_capacity_m2, 3)} & "
+    f"{ptbr(r.cost_per_km / r.weight_capacity_kg, 5)} & {ptbr(r.ratio)} \\\\"
+    for r in trucks.itertuples()
+]
+
+print(r"\begin{table*}[!ht] \centering")
+print(r"\begin{tabular}{@{}lrrrrrr@{}}")
+print(r"\toprule")
+print(r"Comprimento & $A_t$ (m$^2$) & $W_t$ (kg) & $C_t$ (US\$/km) & $C_t/A_t$ "
+      r"(US\$/m$^2$) & $C_t/W_t$ (US\$/kg) & $W_t/A_t$ (kg/m$^2$) \\")
+print(r"\midrule")
+print("\n".join(linhas))
+print(r"\bottomrule")
+print(r"\end{tabular}")
+print(r"\caption{Frota do conjunto \textit{Large-Scale Route Optimization}: capacidade "
+      r"de área e de peso, custo por quilômetro e indicadores derivados, calculados a "
+      r"partir de \texttt{trucks.csv}. O comprimento identifica a classe.}"
+      r" \label{tab-frota}")
+print(r"\end{table*}")
+```
 
 O custo por unidade de capacidade é monotônico no porte do veículo: cai de US\$
-0,332/m² no caminhão de 7,6 m para US\$ 0,248/m² no de 16,5 m (e de US\$
-0,00069/kg para US\$ 0,00037/kg), de modo que "maior é mais barato por unidade".
-O indicador oposto, porém, não é monotônico: a densidade máxima do caminhão
-**cai** com o porte, de 793 kg/m² no de 12,5 m para 671 kg/m² no de 16,5 m e 483
-kg/m² no de 7,6 m. As duas tendências apontam para direções diferentes, e é essa
-tensão que faz da escolha de classe uma decisão de otimização, não uma regra de
-bolso.
+`{python} frota["ca_pior"]`/m² no caminhão de `{python} frota["ca_pior_tipo"]` m
+para US\$ `{python} frota["ca_melhor"]`/m² no de
+`{python} frota["ca_melhor_tipo"]` m (e de US\$ `{python} frota["cw_pior"]`/kg
+para US\$ `{python} frota["cw_melhor"]`/kg), de modo que "maior é mais barato por
+unidade". O indicador oposto, porém, não é monotônico: a densidade máxima do
+caminhão **cai** com o porte, de `{python} frota["dens_125"]` kg/m² no de 12,5 m
+para `{python} frota["dens_165"]` kg/m² no de 16,5 m e
+`{python} frota["dens_76"]` kg/m² no de 7,6 m. As duas tendências apontam para
+direções diferentes, e é essa tensão que faz da escolha de classe uma decisão de
+otimização, não uma regra de bolso.
 
-Nenhum pacote excede a maior classe — o item mais pesado tem 3.130 kg e o maior
-em área, 9,72 m², contra 27.000 kg e 40,25 m² —, de modo que a frota, por si só,
+Nenhum pacote excede a maior classe — o item mais pesado tem
+`{python} frota["item_peso_max"]` kg e o maior em área,
+`{python} frota["item_area_max"]` m², contra
+`{python} frota["caminhao_peso_max"]` kg e
+`{python} frota["caminhao_area_max"]` m² —, de modo que a frota, por si só,
 **não torna nenhuma instância inviável**: ela encarece a solução, não a impede.
 
 A densidade é o parâmetro que decide qual dos dois recursos se esgota primeiro:
 uma carga cuja densidade fica abaixo de $W_t/A_t$ enche a área do caminhão antes
 de atingir o peso máximo, e acima desse limiar acontece o contrário. A
 @fig-densidade mostra a distribuição item a item. Tomada item a item, a mediana
-é de **589 kg/m²** — à esquerda das razões $W_t/A_t$ dos caminhões de 16,5 m
-(671), 12,5 m (793) e 9,6 m (669), e à direita da do caminhão de 7,6 m (483) —,
-embora a cauda se estenda bem acima delas. Somando a carga de uma rota, a
-densidade agregada cai para **554 kg/m²**, e é esse valor que decide o regime de
-quase todas as rotas.
+é de **`{python} frota["dens_mediana"]` kg/m²** — à esquerda das razões
+$W_t/A_t$ dos caminhões de 16,5 m (`{python} frota["dens_165"]`), 12,5 m
+(`{python} frota["dens_125"]`) e 9,6 m (`{python} frota["dens_96"]`), e à direita
+da do caminhão de 7,6 m (`{python} frota["dens_76"]`) —, embora a cauda se
+estenda bem acima delas. Somando a carga de uma rota, a densidade agregada cai
+para **`{python} frota["dens_agregada"]` kg/m²**, e é esse valor que decide o
+regime de quase todas as rotas.
 
 ```{python}
 #| echo: false

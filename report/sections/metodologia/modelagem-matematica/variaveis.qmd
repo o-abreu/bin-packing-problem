@@ -1,0 +1,16 @@
+### Variáveis de decisão
+
+- $z_{gj} \in \lbrace0, 1, \dots, n_g\rbrace$ (inteiro): quantos pacotes do
+  grupo $g$ viajam no caminhão $j$;
+- $u_{gj} \in \lbrace0,1\rbrace$: 1 se ao menos um pacote do grupo $g$ viaja no
+  caminhão $j$, 0 c.c.;
+- $y_{jt} \in \lbrace0,1\rbrace$: 1 se o caminhão $j$ é do tipo $t$, 0 c.c.;
+- $\tau_j \ge 0$ (h): instante de partida do caminhão $j$.
+
+O modelo decide **o empacotamento** (quantos pacotes de cada grupo viajam
+juntos), o **tipo** de cada caminhão e **quando** ele parte. O binário $u_{gj}$
+não é uma segunda decisão: é o indicador de ocupação que as restrições temporais
+precisam, já que a janela depende de _haver_ carga do grupo no caminhão, e não
+de quantas unidades há. Quando $n_g = 1$, $u_{gj} = z_{gj}$ e a formulação volta
+a ser a versão item a item. Os slots são idênticos antes da escolha do tipo, o
+que cria simetria de permutação — quebrada por R10.

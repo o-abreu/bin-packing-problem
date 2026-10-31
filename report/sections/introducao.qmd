@@ -58,11 +58,14 @@ trabalho de modelagem relatado adiante está aí.
 A instância que estudamos vem do conjunto público _Large-Scale Route
 Optimization_, espelho em licença MIT do acelerador homônimo da Microsoft
 [@routeopt2022; @routeopt2026]. Ele descreve um cliente de manufatura que
-distribui pedidos a partir de um único centro de distribuição para 61 destinos e
-fornece a frota em quatro tipos de caminhão, cada um com área de piso,
-capacidade de peso e custo por quilômetro explícitos. São 4.635 pacotes em 365
-pedidos e 61 pares origem–destino, com pacotes de 0,64 a 9,72 m² e de 46 a 3.130
-kg — nenhum excede o menor caminhão. Trata-se de uma **amostra publicada**,
+distribui pedidos a partir de um único centro de distribuição para
+`{python} base["destinos"]` destinos e fornece a frota em quatro tipos de
+caminhão, cada um com área de piso, capacidade de peso e custo por quilômetro
+explícitos. São `{python} base["pacotes"]` pacotes em `{python} base["pedidos"]`
+pedidos e `{python} base["destinos"]` pares origem–destino, com pacotes de
+`{python} base["area_min"]` a `{python} base["area_max"]` m² e de
+`{python} base["peso_min"]` a `{python} base["peso_max"]` kg — nenhum excede o
+menor caminhão. Trata-se de uma **amostra publicada**,
 declarada pelos autores como "inspirada em um cenário real" de um cliente de
 manufatura, e não de dados brutos da empresa; isso basta para o exercício, mas
 precisa ser dito.

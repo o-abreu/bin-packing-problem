@@ -1,16 +1,63 @@
 ### Rotas
 
-Os dados cobrem 62 cidades, das quais uma é o centro de distribuição (`City_61`)
-e 61 são destinos; todas as viagens consideradas aqui são diretas, do centro a
-um destino. A topologia da rede aparece na @fig-rede. `distance.csv` traz a
-matriz completa e simétrica — 62 cidades, 1.891 pares —, desenhada em cinza;
-sobre ela, em preto, estão as 61 rotas diretas que partem do centro de
-distribuição, com espessura proporcional ao número de pacotes (de 1 a 468). As
-posições **não são geográficas**: são a projeção em duas dimensões da própria
-matriz de distâncias, obtida por escalonamento multidimensional clássico, de
-modo que a distância no desenho aproxima a distância entre as cidades. O que a
-figura mostra é a estrutura de _hub_: toda a carga entra e sai por um único nó, e
-`City_58`, o destino mais carregado, é também um dos mais distantes.
+```{python}
+#| include: false
+#| label: rotas-numeros
+# Contagens, extremos e limites por área/peso citados no texto.
+pacotes = items["Destination"].value_counts()
+
+# limites inferiores de frota com o maior caminhão disponível
+maior_tipo = trucks.loc[trucks["area_capacity_m2"].idxmax()]
+A_maior, W_maior = maior_tipo["area_capacity_m2"], maior_tipo["weight_capacity_kg"]
+routes = items.groupby("Destination").agg(area=("area_m2", "sum"),
+                                          weight=("weight_kg", "sum"))
+routes["n_area"] = np.ceil(routes["area"] / A_maior)
+routes["n_peso"] = np.ceil(routes["weight"] / W_maior)
+
+km_rota = dist.loc[dist["Source"] == "City_61"].set_index("Destination")["Distance(M)"] / 1e3
+extremo = routes.loc["City_58"]
+
+dia = pd.to_datetime(items["Available_Time"]).dt.date
+inst = items.assign(dia=dia).groupby(["Destination", "dia"]).size()
+
+rot = {
+    "cidades": ptbr(len(cities)),
+    "comprimento_maior": ptbr(maior_tipo["truck_type"], 1),
+    "destinos": ptbr(items["Destination"].nunique()),
+    "pares": ptbr(len(cities) * (len(cities) - 1) // 2),
+    "pacotes_min": ptbr(pacotes.min()),
+    "pacotes_max": ptbr(pacotes.max()),
+    "area_apertada": ptbr(int((routes["n_area"] > routes["n_peso"]).sum())),
+    "empate": ptbr(int((routes["n_area"] == routes["n_peso"]).sum())),
+    "peso_apertado": ptbr(int((routes["n_area"] < routes["n_peso"]).sum())),
+    "caminhoes_area": ptbr(int(routes["n_area"].sum())),
+    "caminhoes_peso": ptbr(int(routes["n_peso"].sum())),
+    "c58_km": ptbr(km_rota["City_58"]),
+    "c58_pacotes": ptbr(int(pacotes["City_58"])),
+    "c58_area": ptbr(extremo["area"]),
+    "c58_peso": ptbr(extremo["weight"] / 1e3),
+    "c58_peso_caminhoes": ptbr(int(extremo["n_peso"])),
+    "c58_area_caminhoes": ptbr(int(extremo["n_area"])),
+    "instancias": ptbr(len(inst)),
+    "inst_mediana": ptbr(inst.median()),
+    "inst_p90": ptbr(inst.quantile(0.90)),
+    "inst_max": ptbr(inst.max()),
+}
+```
+
+Os dados cobrem `{python} rot["cidades"]` cidades, das quais uma é o centro de
+distribuição (`City_61`) e `{python} rot["destinos"]` são destinos; todas as
+viagens consideradas aqui são diretas, do centro a um destino. A topologia da
+rede aparece na @fig-rede. `distance.csv` traz a matriz completa e simétrica —
+`{python} rot["cidades"]` cidades, `{python} rot["pares"]` pares —, desenhada em
+cinza; sobre ela, em preto, estão as `{python} rot["destinos"]` rotas diretas que
+partem do centro de distribuição, com espessura proporcional ao número de pacotes
+(de `{python} rot["pacotes_min"]` a `{python} rot["pacotes_max"]`). As posições
+**não são geográficas**: são a projeção em duas dimensões da própria matriz de
+distâncias, obtida por escalonamento multidimensional clássico, de modo que a
+distância no desenho aproxima a distância entre as cidades. O que a figura mostra
+é a estrutura de _hub_: toda a carga entra e sai por um único nó, e `City_58`, o
+destino mais carregado, é também um dos mais distantes.
 
 ```{python}
 #| echo: false
@@ -20,7 +67,6 @@ figura mostra é a estrutura de _hub_: toda a carga entra e sai por um único n�
 #| fig-height: 1.65
 #| fig-cap: 'Rede de rotas do conjunto *Large-Scale Route Optimization*. Linhas cinza: os 1.891 pares de `distance.csv` (62 cidades). Linhas pretas: as 61 rotas diretas a partir do centro de distribuição (`City_61`), com espessura proporcional ao número de pacotes da rota (1 a 468). Posições por escalonamento multidimensional da matriz de distâncias — é uma projeção, não um mapa geográfico.'
 
-pacotes = items["Destination"].value_counts()
 fig, ax = plt.subplots()
 
 i, j = np.triu_indices(n_cidades, 1)
@@ -50,10 +96,14 @@ plt.tight_layout()
 
 A consequência agregada do caráter bidimensional aparece na @fig-rotas, que
 compara, rota a rota, os caminhões que a área exigiria com os que o peso exigiria
-se a frota fosse só de veículos de 16,5 m. Com esse veículo, o limite por área é
-o mais apertado em **18 das 61 rotas**, empata em 38 e é mais folgado em apenas
-5; no total, a frota exigiria **270 caminhões por área contra 226 por peso**. É
-por isso que a formulação não pode ser unidimensional.
+se a frota fosse só de veículos de `{python} rot["comprimento_maior"]` m. Com esse
+veículo, o limite por área é o mais apertado em
+**`{python} rot["area_apertada"]` das `{python} rot["destinos"]` rotas**, empata
+em `{python} rot["empate"]` e é mais folgado em apenas
+`{python} rot["peso_apertado"]`; no total, a frota exigiria
+**`{python} rot["caminhoes_area"]` caminhões por área contra
+`{python} rot["caminhoes_peso"]` por peso**. É por isso que a formulação não pode
+ser unidimensional.
 
 ```{python}
 #| echo: false
@@ -62,12 +112,6 @@ por isso que a formulação não pode ser unidimensional.
 #| fig-width: 3.3
 #| fig-height: 2.6
 #| fig-cap: 'Caminhões por rota, se a frota fosse só de veículos de 16,5 m: limite inferior por área ($\lceil \sum_i a_i/A_t \rceil$) contra limite mínimo por peso ($\lceil \sum_i w_i/W_t \rceil$). Acima da diagonal, a área exige mais caminhões que o peso; abaixo, o contrário; sobre ela, os dois limites coincidem.'
-
-A, W = 40.25, 27000.0  # caminhão de 16,5 m
-routes = items.groupby("Destination").agg(area=("area_m2", "sum"),
-                                          weight=("weight_kg", "sum"))
-routes["n_area"] = np.ceil(routes["area"] / A)
-routes["n_peso"] = np.ceil(routes["weight"] / W)
 
 lim = int(routes[["n_area", "n_peso"]].to_numpy().max()) + 2
 fig, ax = plt.subplots()
@@ -80,7 +124,6 @@ ax.set_xlim(0, lim)
 ax.set_ylim(0, lim)
 ax.set_aspect("equal")
 
-extremo = routes.loc["City_58"]
 ax.annotate("City_58", xy=(extremo["n_peso"], extremo["n_area"]),
             xytext=(10, -14), textcoords="offset points", ha="left",
             va="top", fontsize=6,
@@ -88,11 +131,15 @@ ax.annotate("City_58", xy=(extremo["n_peso"], extremo["n_area"]),
 plt.tight_layout()
 ```
 
-O caso `City_61 → City_58` (1.754 km, 468 pacotes, 1.163 m² e 418 t) é o extremo
-da assimetria: seriam 16 caminhões se apenas o peso contasse e 29 se apenas a
-área contasse.
+O caso `City_61 → City_58` (`{python} rot["c58_km"]` km,
+`{python} rot["c58_pacotes"]` pacotes, `{python} rot["c58_area"]` m² e
+`{python} rot["c58_peso"]` t) é o extremo da assimetria: seriam
+`{python} rot["c58_peso_caminhoes"]` caminhões se apenas o peso contasse e
+`{python} rot["c58_area_caminhoes"]` se apenas a área contasse.
 
-Recortando as rotas por dia de disponibilidade, obtêm-se 111 instâncias não
-vazias, com mediana de 31 pacotes (p90 de 86 e máximo de 198) — o que define os
-três portes de instância do plano experimental: pequenas (resolução exata sem
-limite de tempo), médias (exata com limite) e grandes (apenas heurística).
+Recortando as rotas por dia de disponibilidade, obtêm-se
+`{python} rot["instancias"]` instâncias não vazias, com mediana de
+`{python} rot["inst_mediana"]` pacotes (p90 de `{python} rot["inst_p90"]` e
+máximo de `{python} rot["inst_max"]`) — o que define os três portes de instância
+do plano experimental: pequenas (resolução exata sem limite de tempo), médias
+(exata com limite) e grandes (apenas heurística).

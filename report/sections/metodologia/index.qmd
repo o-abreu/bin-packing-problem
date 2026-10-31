@@ -13,4 +13,4 @@ inteira mista que será resolvido.
 
 {{< include sections/metodologia/pre-processamento/index.qmd >}}
 
-{{< include sections/metodologia/modelagem-matematica.qmd >}}
+{{< include sections/metodologia/modelagem-matematica/index.qmd >}}

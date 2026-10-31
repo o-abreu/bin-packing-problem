@@ -1,16 +1,9 @@
 ### Pedidos
 
-Os 4.635 pacotes chegam em **365 pedidos** (`Order_ID`), de tamanhos muito
-desiguais: de 1 a 39 pacotes, com mediana de 10 (p10 de 2, p90 de 29) e peso
-mediano de 16,2 t. Um pedido é, ainda, **homogêneo**: em 86,6% deles há um único
-tipo (área, peso), em 11,8% dois, em 1,4% três e em 0,3% quatro. A
-@fig-pedidos-volume resume as duas coisas — o volume por pedido e a diversidade
-de tipos dentro dele.
-
 ```{python}
-#| echo: false
-#| warning: false
-
+#| include: false
+#| label: pedidos-numeros
+# Agregações por pedido usadas no texto e nas figuras desta subseção.
 g = items.groupby("Order_ID")
 pedidos = pd.DataFrame({
     "pacotes": g.size(),
@@ -19,7 +12,90 @@ pedidos = pd.DataFrame({
     "av": pd.to_datetime(g["Available_Time"].first()).dt.date,
     "dl": pd.to_datetime(g["Deadline"].first()).dt.date,
 })
+contagem = pedidos["tipos"].value_counts().sort_index()
+liberacao = pedidos.groupby("av").agg(pedidos=("pacotes", "size"),
+                                      pacotes=("pacotes", "sum"))
+prazo = pedidos.groupby("dl").size()
+toneladas_dia = pedidos.groupby("av")["peso_t"].sum() / 1e3  # milhares de t
+
+# janela e folga por item (o trânsito vem da distância da rota)
+km = dist.loc[dist["Source"] == "City_61"].set_index("Destination")["Distance(M)"] / 1e3
+transito = items["Destination"].map(km) / 40.0
+janela_h = (pd.to_datetime(items["Deadline"])
+            - pd.to_datetime(items["Available_Time"])).dt.total_seconds() / 3600
+folga_h = janela_h - transito
+
+# Lorenz
+pacotes_ord = np.sort(pedidos["pacotes"].to_numpy())
+n_ped = len(pacotes_ord)
+frac = np.concatenate([[0.0], np.arange(1, n_ped + 1) / n_ped])
+acum = np.concatenate([[0.0], np.cumsum(pacotes_ord) / pacotes_ord.sum()])
+gini = 1.0 - 2.0 * np.trapezoid(acum, frac)
+
+# concentração da carga por destino e dia de liberação
+MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho",
+         "agosto", "setembro", "outubro", "novembro", "dezembro"]
+dia = pd.to_datetime(items["Available_Time"]).dt.date
+tab = (items.assign(dia=dia).groupby(["Destination", "dia"]).size()
+       .unstack(fill_value=0))
+tab = tab.loc[tab.sum(axis=1).sort_values(ascending=False).index]
+share = tab.div(tab.sum(axis=1), axis=0) * 100
+dias_carga = (tab > 0).sum(axis=1)
+c58 = share.loc["City_58"]
+
+ped = {
+    "pacotes": ptbr(len(items)),
+    "pedidos": ptbr(len(pedidos)),
+    "min": ptbr(pedidos["pacotes"].min()),
+    "max": ptbr(pedidos["pacotes"].max()),
+    "mediana": ptbr(pedidos["pacotes"].median()),
+    "p10": ptbr(pedidos["pacotes"].quantile(0.10)),
+    "p90": ptbr(pedidos["pacotes"].quantile(0.90)),
+    "peso_med": ptbr(pedidos["peso_t"].median(), 1),
+    "pct": {k: ptbr(100 * contagem.get(k, 0) / len(pedidos), 1) for k in (1, 2, 3, 4)},
+    "gini": ptbr(gini, 2),
+    "top10": ptbr(100 * pacotes_ord[-max(1, n_ped // 10):].sum() / pacotes_ord.sum()),
+    "metade": ptbr(100 * pacotes_ord[:n_ped // 2].sum() / pacotes_ord.sum()),
+    "lib_dias": len(liberacao),
+    "lib_periodo": (f"{liberacao.index.min().day} a {liberacao.index.max().day} de "
+                    f"{MESES[liberacao.index.min().month - 1]} de "
+                    f"{liberacao.index.min().year}"),
+    "lotes": [ptbr(v) for v in liberacao["pacotes"]],
+    "tons_dia": ptbr(toneladas_dia.median(), 1),
+    "prazo_dias": len(prazo),
+    "prazo_periodo": (f"{prazo.index.min().day} a {prazo.index.max().day} de "
+                      f"{MESES[prazo.index.min().month - 1]}"),
+    "pico_dia": prazo.idxmax().day,
+    "pico_mes": MESES[prazo.idxmax().month - 1],
+    "pico_pedidos": ptbr(prazo.max()),
+    "janela_med_d": ptbr(janela_h.median() / 24, 1),
+    "janela_max_d": ptbr(janela_h.max() / 24),
+    "destinos": ptbr(len(tab)),
+    "um_dia": ptbr(int((dias_carga == 1).sum())),
+    "dois_dias": ptbr(int((dias_carga == 2).sum())),
+    "tres_dias": ptbr(int((dias_carga == 3).sum())),
+    "dominante": ptbr(share.max(axis=1).median(), 1),
+    "top10_tres": ptbr(int((dias_carga.head(10) == 3).sum())),
+    "c58": [ptbr(v) for v in c58],
+    "intervalo_h": ptbr(int((liberacao.index[1] - liberacao.index[0]).days * 24)),
+    "janela_min_h": ptbr(janela_h.min()),
+    "janela_max_h": ptbr(janela_h.max()),
+    "janela_med_h": ptbr(janela_h.median()),
+    "folga_med": ptbr(folga_h.median()),
+    "folga_curta": ptbr(int((folga_h < 4).sum())),
+    "instancias": ptbr(items.assign(dia=dia).groupby(["Destination", "dia"]).ngroups),
+}
 ```
+
+Os `{python} ped["pacotes"]` pacotes chegam em **`{python} ped["pedidos"]`
+pedidos** (`Order_ID`), de tamanhos muito desiguais: de `{python} ped["min"]` a
+`{python} ped["max"]` pacotes, com mediana de `{python} ped["mediana"]` (p10 de
+`{python} ped["p10"]`, p90 de `{python} ped["p90"]`) e peso mediano de
+`{python} ped["peso_med"]` t. Um pedido é, ainda, **homogêneo**: em
+`{python} ped["pct"][1]`% deles há um único tipo (área, peso), em
+`{python} ped["pct"][2]`% dois, em `{python} ped["pct"][3]`% três e em
+`{python} ped["pct"][4]`% quatro. A @fig-pedidos-volume resume as duas coisas —
+o volume por pedido e a diversidade de tipos dentro dele.
 
 ```{python}
 #| echo: false
@@ -38,7 +114,6 @@ ax.set_xlabel("pacotes por pedido")
 ax.set_ylabel("pedidos")
 
 ax = axes[1]
-contagem = pedidos["tipos"].value_counts().sort_index()
 ax.bar(contagem.index, 100 * contagem / len(pedidos), color="0.78",
        edgecolor="black", linewidth=0.4, width=0.7)
 for k, v in contagem.items():
@@ -52,10 +127,11 @@ plt.tight_layout()
 ```
 
 O tamanho desigual dos pedidos produz uma concentração moderada: o índice de
-Gini dos pacotes por pedido é de **0,42** — os 10% maiores pedidos carregam 28%
-dos pacotes, e a metade menor responde por 22% —, como mostra a
-@fig-pedidos-lorenz. Nada parecido com uma distribuição de cauda pesada: há
-pedidos grandes, mas não há alguns poucos pedidos dominando o conjunto.
+Gini dos pacotes por pedido é de **`{python} ped["gini"]`** — os 10% maiores
+pedidos carregam `{python} ped["top10"]`% dos pacotes, e a metade menor responde
+por `{python} ped["metade"]`% —, como mostra a @fig-pedidos-lorenz. Nada parecido
+com uma distribuição de cauda pesada: há pedidos grandes, mas não há alguns
+poucos pedidos dominando o conjunto.
 
 ```{python}
 #| echo: false
@@ -64,11 +140,6 @@ pedidos grandes, mas não há alguns poucos pedidos dominando o conjunto.
 #| fig-width: 3.3
 #| fig-height: 2.2
 #| fig-cap: 'Curva de Lorenz dos tamanhos de pedido (pacotes por `Order_ID`). A diagonal representa igualdade perfeita; a área entre a curva e a diagonal é o índice de Gini (0,42). Os 10% maiores pedidos concentram 28% dos pacotes.'
-
-pacotes_ord = np.sort(pedidos["pacotes"].to_numpy())
-frac = np.concatenate([[0.0], np.arange(1, len(pacotes_ord) + 1) / len(pacotes_ord)])
-acum = np.concatenate([[0.0], np.cumsum(pacotes_ord) / pacotes_ord.sum()])
-gini = 1.0 - 2.0 * np.trapezoid(acum, frac)
 
 fig, ax = plt.subplots()
 ax.plot([0, 1], [0, 1], linestyle="--", color="black", linewidth=0.6)
@@ -81,12 +152,16 @@ ax.set_aspect("equal")
 plt.tight_layout()
 ```
 
-No tempo, a oferta é concentrada e a demanda é espalhada. Todos os 4.635 pacotes
-ficam disponíveis em **três dias** (5 a 7 de abril de 2022), em lotes
-semelhantes — 1.495, 1.399 e 1.741 pacotes, cerca de 1,7 mil t por dia —, enquanto
-os prazos se distribuem por **oito dias** (6 a 13 de abril), com pico em 9 de
-abril (106 pedidos). A janela entre disponibilidade e prazo tem mediana de 2,5
-dias e máximo de 6. A @fig-pedidos-tempo compara as duas distribuições.
+No tempo, a oferta é concentrada e a demanda é espalhada. Todos os `{python} ped["pacotes"]` pacotes ficam disponíveis em
+**`{python} ped["lib_dias"]` dias** (`{python} ped["lib_periodo"]`), em lotes semelhantes —
+`{python} ped["lotes"][0]`, `{python} ped["lotes"][1]` e
+`{python} ped["lotes"][2]` pacotes, cerca de
+`{python} ped["tons_dia"]` mil t por dia —, enquanto os prazos se distribuem por
+**`{python} ped["prazo_dias"]` dias** (`{python} ped["prazo_periodo"]`), com pico
+em `{python} ped["pico_dia"]` de `{python} ped["pico_mes"]` (`{python} ped["pico_pedidos"]` pedidos). A
+janela entre disponibilidade e prazo tem mediana de
+`{python} ped["janela_med_d"]` dias e máximo de `{python} ped["janela_max_d"]`. A
+@fig-pedidos-tempo compara as duas distribuições.
 
 ```{python}
 #| echo: false
@@ -95,10 +170,6 @@ dias e máximo de 6. A @fig-pedidos-tempo compara as duas distribuições.
 #| fig-width: 3.3
 #| fig-height: 1.5
 #| fig-cap: 'Distribuição temporal dos pedidos de `order_large.csv`. Esquerda: pacotes liberados por dia de `Available_Time` (o número sobre cada barra é o de pedidos daquele dia). Direita: pedidos por dia de `Deadline`. A liberação ocupa três dias e os prazos, oito.'
-
-liberacao = pedidos.groupby("av").agg(pedidos=("pacotes", "size"),
-                                      pacotes=("pacotes", "sum"))
-prazo = pedidos.groupby("dl").size()
 
 fig, axes = plt.subplots(1, 2)
 ax = axes[0]
@@ -120,25 +191,30 @@ ax.set_ylabel("pedidos com prazo")
 plt.tight_layout()
 ```
 
-A concentração também é espacial — mas **heterogênea**: dos 61 destinos, 28
-recebem carga em um único dia, 16 em dois e 17 nos três, e a mediana do dia
-dominante é de 89,5% da carga do destino. O padrão, porém, se inverte com o
-volume: entre os dez maiores, nove usam os três dias (a carga de `City_58`
-reparte-se em 31%, 42% e 27%), enquanto os destinos pequenos tendem a concentrar
+A concentração também é espacial — mas **heterogênea**: dos
+`{python} ped["destinos"]` destinos, `{python} ped["um_dia"]` recebem carga em um único
+dia, `{python} ped["dois_dias"]` em dois e `{python} ped["tres_dias"]` nos três,
+e a mediana do dia dominante é de `{python} ped["dominante"]`% da carga do
+destino. O padrão, porém, se inverte com o volume: entre os dez maiores,
+`{python} ped["top10_tres"]` usam os três dias (a carga de `City_58` reparte-se
+em `{python} ped["c58"][0]`%, `{python} ped["c58"][1]`% e
+`{python} ped["c58"][2]`%), enquanto os destinos pequenos tendem a concentrar
 tudo num dia só.
 
 Esse resultado tem consequência direta para o modelo: como os dias consecutivos
-de liberação distam **24 h**, muito acima de $\Delta = 4$ h, um caminhão não
-consegue misturar pacotes liberados em dias diferentes. O recorte rota × dia não
-fragmenta a instância artificialmente — ele reflete a própria janela de
-consolidação.
+de liberação distam **`{python} ped["intervalo_h"]` h**, muito acima de
+$\Delta = 4$ h, um caminhão não consegue misturar pacotes liberados em dias
+diferentes. O recorte rota × dia não fragmenta a instância artificialmente — ele
+reflete a própria janela de consolidação.
 
-A janela entre disponibilidade e prazo mede de 1 a 144 h (mediana de 60 h), mas
-o trânsito consome parte dela: descontando $t_{\text{viagem}} = d/v$, a folga
-mediana cai para **30 h** e **73 dos 4.635 itens** ficam com menos de 4 h. Nesses
-casos o instante de partida é praticamente forçado, e a única liberdade que resta
-ao modelo é o emparelhamento — é aí que R6–R8 mordem. A @fig-pedidos-janela
-mostra as duas distribuições.
+A janela entre disponibilidade e prazo mede de `{python} ped["janela_min_h"]` a
+`{python} ped["janela_max_h"]` h (mediana de `{python} ped["janela_med_h"]` h),
+mas o trânsito consome parte dela: descontando $t_{\text{viagem}} = d/v$, a folga
+mediana cai para **`{python} ped["folga_med"]` h** e `{python} ped["folga_curta"]`
+dos `{python} ped["pacotes"]` itens ficam com menos de 4 h. Nesses casos o
+instante de partida é praticamente forçado, e a única liberdade que resta ao
+modelo é o emparelhamento — é aí que R6–R8 mordem. A @fig-pedidos-janela mostra
+as duas distribuições.
 
 ```{python}
 #| echo: false
@@ -147,12 +223,6 @@ mostra as duas distribuições.
 #| fig-width: 3.3
 #| fig-height: 2.7
 #| fig-cap: 'Tempo disponível por item, em painéis empilhados e na mesma escala (0 a 144 h). Acima: janela total entre `Available_Time` e `Deadline` (1 a 144 h, mediana 60 h). Abaixo: folga que sobra depois de descontar o tempo de viagem na rota (mediana 30 h; 73 itens com menos de 4 h) — a distribuição desloca-se para a esquerda e deixa de usar o topo da escala.'
-
-km = dist.loc[dist["Source"] == "City_61"].set_index("Destination")["Distance(M)"] / 1e3
-transito = items["Destination"].map(km) / 40.0
-janela_h = (pd.to_datetime(items["Deadline"])
-            - pd.to_datetime(items["Available_Time"])).dt.total_seconds() / 3600
-folga_h = janela_h - transito
 
 fig, axes = plt.subplots(2, 1)
 valores, contagens = np.unique(janela_h, return_counts=True)
@@ -172,9 +242,10 @@ plt.tight_layout()
 ```
 
 Dois fatos fecham a leitura dos pedidos como unidade de análise. Primeiro,
-`Available_Time` e `Deadline` são **constantes dentro de cada pedido** nos 365
-casos: o pedido é a menor unidade temporal do conjunto, e não o pacote. Segundo,
-como um pedido é quase sempre homogêneo, a diversidade de tipos que aparece numa
-rota vem da **mistura de pedidos**, não da composição interna de cada um. É por
-isso que o recorte experimental natural é rota × dia de disponibilidade — o que
-devolve 111 instâncias não vazias, tratadas na próxima subseção.
+`Available_Time` e `Deadline` são **constantes dentro de cada pedido** nos
+`{python} ped["pedidos"]` casos: o pedido é a menor unidade temporal do conjunto,
+e não o pacote. Segundo, como um pedido é quase sempre homogêneo, a diversidade
+de tipos que aparece numa rota vem da **mistura de pedidos**, não da composição
+interna de cada um. É por isso que o recorte experimental natural é rota × dia de
+disponibilidade — o que devolve `{python} ped["instancias"]` instâncias não
+vazias, tratadas na próxima subseção.

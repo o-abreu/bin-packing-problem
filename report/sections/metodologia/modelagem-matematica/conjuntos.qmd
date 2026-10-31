@@ -1,0 +1,38 @@
+### Conjuntos
+
+- $G = \{1, \dots, G\}$: **grupos de pacotes idênticos** — pacotes com a mesma
+  área, peso, disponibilidade e prazo —, cada grupo com multiplicidade $n_g$; o
+  total de pacotes da instância é $n = \sum_g n_g$;
+- $T = \{1, \dots, 4\}$: tipos de caminhão disponíveis;
+- $J = \{1, \dots, m\}$: _slots_ (posições) de caminhão disponíveis, com
+  $m \le n$.
+
+A instância é definida **sobre grupos**, e não sobre pacotes. Isso não perde
+nada: pacotes de um mesmo grupo são indistinguíveis para todas as restrições —
+mesma área, mesmo peso e mesma janela —, de modo que a única informação que os
+distingue é **quantos** vão em cada caminhão. A decisão $z_{gj}$ é, portanto,
+uma contagem, e a reconstrução de uma solução pacote a pacote é uma etapa de
+pós-processamento (distribuir as identidades dentro do grupo), sem efeito sobre
+custo ou viabilidade.
+
+Um **slot** não é um caminhão específico, é uma **posição abstrata** que o
+modelo pode deixar vazia ou preencher com um caminhão de algum tipo. Como o
+**número** de veículos é justamente o que se quer decidir, criam-se $m$ posições
+candidatas e deixa-se que $y_{jt}$ indique se a posição $j$ é um caminhão do
+tipo $t$; se nenhum tipo for atribuído, o slot permanece fechado (R4–R5). Os
+slots são intercambiáveis entre si — trocar dois produz a mesma solução física
+—, o que gera **simetria de permutação**: cada plano de carregamento tem até
+$m!$ representações de custo idêntico e de mesmo limitante [@margot2010]. A
+simetria não altera o valor ótimo, mas encarece a prova de otimalidade: cópias
+simétricas têm o mesmo limitante, então o _branch-and-bound_ não consegue podar
+uma a partir do resultado da outra, e o esforço passa a acompanhar o número de
+rótulos em vez do número de soluções distintas [@ostrowski2011]. A relaxação
+linear também fica degenerada, com vértices fracionários equivalentes
+[@sherali2001], e as desigualdades válidas obtidas para uma cópia não se
+transpõem automaticamente às demais [@margot2010] — o que motivou as técnicas de
+quebra baseadas em órbitas [@ostrowski2011; @kaibel2008]. Por isso o modelo
+inclui a restrição de quebra **R10**, que fixa o padrão de abertura.
+
+O agrupamento já elimina, por construção, a simetria **entre pacotes
+idênticos**: não há um índice por pacote para permutar. Resta a simetria entre
+slots, tratada na subseção de quebra de simetria.

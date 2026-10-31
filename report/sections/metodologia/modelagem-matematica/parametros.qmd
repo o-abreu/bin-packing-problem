@@ -1,0 +1,119 @@
+### Parâmetros
+
+O _dataset_ de referência nos fornece 20 colunas distintas, das quais **11** são
+incorporadas enquanto parâmetros em nossa modelagem. Esta correlação está
+descrita nas quatro tabelas 3 à 6, sobre as quais devemos fazer algumas
+considerações importantes.
+
+<!-- Início das tabelas, aqui descritas em latex cru por razão de incompatibilidade da extensão ieee para renderizar tabelas a partir da sua representação em markdown. -->
+
+\begin{table*}[!t] \centering
+\begin{tabular}{@{}p{0.09\linewidth}p{0.53\linewidth}p{0.22\linewidth}p{0.08\linewidth}@{}}
+\toprule Parâmetro & Descrição & Coluna & Unidade \\ \midrule $g$ & grupo de
+pacotes idênticos (derivado das quatro colunas seguintes) & --- & --- \\ $a_g$ &
+área de um pacote do grupo $g$ ($\ge 0$) & \texttt{Area} & m$^2$ \\ $w_g$ & peso
+de um pacote do grupo $g$ ($> 0$) & \texttt{Weight} & kg \\ $av_g$ &
+disponibilidade dos pacotes do grupo $g$ ($\ge 0$) & \texttt{Available\_Time} &
+h \\ $dl_g$ & prazo dos pacotes do grupo $g$ ($\ge 0$) & \texttt{Deadline} & h
+\\ --- & origem da rota (constante \texttt{City\_61}) & \texttt{Source} & --- \\
+--- & destino da rota (define a instância) & \texttt{Destination} & --- \\ --- &
+identificador de pedido; não entra no modelo & \texttt{Order\_ID} & --- \\ --- &
+identificador de material; não entra no modelo & \texttt{Material\_ID} & --- \\
+--- & classe de perigo; excluída por vacuidade & \texttt{Danger\_Type} & --- \\
+\bottomrule \end{tabular} \caption{Colunas de \texttt{order\_large.csv} e
+\texttt{order\_small.csv}: 10 colunas, 5 delas viram parâmetros de grupo.}
+\label{param-order} \end{table*}
+
+\begin{table*}[!t] \centering
+\begin{tabular}{@{}p{0.09\linewidth}p{0.53\linewidth}p{0.22\linewidth}p{0.08\linewidth}@{}}
+\toprule Parâmetro & Descrição & Coluna & Unidade \\ \midrule --- & origem
+(confirma \texttt{City\_61}) & \texttt{Source} & --- \\ --- & destino (confirma
+a instância) & \texttt{Destination} & --- \\ $d$ & distância da rota ($> 0$) &
+\texttt{Distance(M)} & km \\ \bottomrule \end{tabular} \caption{Colunas de
+\texttt{distance.csv}: apenas \texttt{Distance(M)} vira parâmetro.}
+\label{param-distance} \end{table*}
+
+\begin{table*}[!t] \centering
+\begin{tabular}{@{}p{0.09\linewidth}p{0.53\linewidth}p{0.22\linewidth}p{0.08\linewidth}@{}}
+\toprule Parâmetro & Descrição & Coluna & Unidade \\ \midrule $t$ & índice do
+tipo de caminhão & \texttt{truck\_type} & --- \\ $A_t$ & capacidade de área do
+caminhão do tipo $t$ ($> 0$) & \texttt{area\_capacity\_m2} & m$^2$ \\ $W_t$ &
+capacidade de peso do caminhão do tipo $t$ ($> 0$) &
+\texttt{weight\_capacity\_kg} & kg \\ $c_t$ & custo por quilômetro do tipo $t$
+($> 0$) & \texttt{cost\_per\_km} & US\$/km \\ $v$ & velocidade do caminhão &
+\texttt{speed\_kmh} & km/h \\ --- & comprimento (usado apenas para
+derivar/validar $A_t$) & \texttt{inner\_length\_m} & --- \\ --- & largura (usado
+apenas para derivar/validar $A_t$) & \texttt{inner\_width\_m} & --- \\
+\bottomrule \end{tabular} \caption{Colunas de \texttt{trucks.csv}: cinco
+parâmetros definem a frota.} \label{param-trucks} \end{table*}
+
+\begin{table*}[!t] \centering
+\begin{tabular}{@{}p{0.12\linewidth}p{0.74\linewidth}p{0.08\linewidth}@{}}
+\toprule Parâmetro & Descrição & Unidade \\ \midrule $C_t$ & custo fixo de um
+caminhão do tipo $t$ ($= c_t\,d$) & US\$ \\ $t_{\text{viagem}}$ & tempo de
+viagem na rota ($= d/v$) & h \\ $\Delta$ & janela de consolidação ($= 4$ h) & h
+\\ $M$ & constante de desativação ($\ge \max_g dl_g - \min_g av_g$) & h \\
+\bottomrule \end{tabular} \caption{Parâmetros derivados e de política, que não
+vêm de coluna do dataset.} \label{param-derived} \end{table*}
+
+<!-- Término das tabelas -->
+
+#### Multiplicidade de pacotes idênticos
+
+A multiplicidade $n_g$ não vem de coluna alguma: é a contagem de pacotes que
+compartilham a mesma quádrupla (área, peso, disponibilidade, prazo). No conjunto
+completo há `{python} base["pacotes"]` pacotes para `{python} pac["classes"]`
+classes distintas — `{python} resumo["grupos"]` grupos quando contados por
+instância —, e nenhuma instância passa de `{python} tam["G_max"]` grupos, o que
+encurta a
+formulação em uma ordem de grandeza (ver a análise de complexidade). Se todos os
+pacotes fossem distintos, teríamos $n_g = 1$ para todo $g$ e a formulação abaixo
+coincidiria com a versão item a item.
+
+#### Área enquanto uma grandeza vetorial
+
+Para cada pacote, o dataset fornece `Area` (m²) e `Weight` (kg), não
+comprimento, largura ou altura. A capacidade é **vetorial** (soma de recursos),
+não um empacotamento geométrico; empilhamento não é representado.
+
+#### Coluna `Danger_Type`
+
+A coluna `Danger_Type` foi removida da modelagem por vacuidade. Esta coluna
+descreve tipos de pacotes (`type_1` e `type_2`) os quais, por considerações de
+segurança, não podem ser transportados juntos. Entretanto estes pacotes não são
+solicitados a um mesmo destino sequer uma vez, então esse encontro jamais
+poderia ocorrer na atual configuração.
+
+#### Grandezas de tempo
+
+As grandezas — $av_g$, $dl_g$, $\tau_j$, $\Delta$ e $M$ — são medidas em **horas
+a partir de uma origem comum** (o menor `Available_Time` da instância): o
+dataset traz carimbos de data e hora, que precisam virar números para entrar nas
+restrições lineares, e a hora é a unidade coerente com $v$ (km/h).
+
+#### Classes
+
+A **classe** é o tipo de caminhão $t$, com $(A_t, W_t, C_t)$. O custo por
+unidade de capacidade é monotônico no tamanho (`{python} frota["ca_pior"]` por
+m² no caminhão de `{python} frota["ca_pior_tipo"]` m contra
+`{python} frota["ca_melhor"]` no de `{python} frota["ca_melhor_tipo"]` m), mas o
+custo **por caminhão** cresce com o porte — é
+esse _trade-off_ que dá conteúdo ao VSBPP: para cargas pequenas, um caminhão
+menor é mais barato apesar de menos eficiente por unidade.
+
+#### Janela de consolidação
+
+$\Delta$ **não é um dado**: é um parâmetro de política herdado do acelerador de
+referência. No `README` do repositório [@routeopt2022], ela aparece como a
+terceira restrição do problema:
+
+> "A diferença de tempo disponível entre os itens disponíveis mais cedo e mais
+> tarde para um mesmo caminhão deve ser definida pelo usuário (exemplo: 4
+> horas)" \[Tradução nossa]
+
+Adotamos o valor sugerido, $\Delta = 4$ h. As restrições 2 e 4 do mesmo `README`
+fundamentam, respectivamente, R7 (o caminhão só parte quando todos os pacotes
+estão disponíveis) e R9 (entrega antes do prazo). Não fosse especificado, um
+caminhão poderia esperar dias para consolidar carga. No mais, o dataset não
+precifica espera; por isso o modelo espera até o limite dos prazos (R8–R9), e
+essa ausência é apenas registrada.

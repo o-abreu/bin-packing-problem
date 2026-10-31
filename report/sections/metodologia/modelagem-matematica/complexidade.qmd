@@ -1,0 +1,40 @@
+### Complexidade computacional
+
+#### Tamanho do modelo
+
+Com $m \le n$ slots, $G$ grupos e $T$ tipos há $2Gm$ variáveis por grupo (uma
+contagem inteira e um binário de ocupação), $mT$ binárias de tipo e $m$
+contínuas; R1–R10 somam $O(Gm)$ linhas e $O(GmT)$ coeficientes não nulos. Como
+$G \le n$, a formulação nunca é maior que a versão item a item, e é estritamente
+menor assim que houver repetição.
+
+#### Esforço de resolução
+
+A relaxação linear é polinomial no tamanho do modelo; o _branch-and-bound_ não
+é. Cada folha da árvore é uma distribuição de contagens entre os slots, e o
+número de distribuições é
+
+$$\prod_{g \in G} \binom{n_g + m - 1}{m - 1},$$
+
+que coincide com $m^n$ quando todos os $n_g = 1$ e cai rapidamente quando há
+repetição. O problema em si continua NP-difícil — a partição ótima em pacotes
+admite solução exata por programação dinâmica sobre subconjuntos em
+$O(n\,3^n) = 2^{O(n)}$ —, de modo que o ganho do MILP não é assintótico, e sim
+prático: limitante da relaxação, cortes e presolve podam a árvore
+[@martello1990].
+
+#### Nestas instâncias
+
+As `{python} tam["inst"]` instâncias vão de `{python} tam["n_min"]` a
+`{python} tam["n_max"]` pacotes ($G$ de `{python} tam["G_min"]` a
+`{python} tam["G_max"]`) e o teto de slots de pré-processamento vai de
+`{python} tam["m_min"]` a `{python} tam["m_max"]`. Na maior delas
+(`{python} tam["maior_id"]`, `{python} tam["maior_n"]` pacotes em
+`{python} tam["maior_G"]` grupos, `{python} tam["maior_m"]` slots), a formulação
+agregada tem `{python} tam["agg_vars"]` variáveis e
+`{python} tam["agg_linhas"]` linhas; a versão item a item, **com o mesmo $m$**,
+teria `{python} tam["item_vars"]` variáveis e `{python} tam["item_linhas"]`
+linhas — sete e onze vezes mais. Sem o teto de slots ($m = n$), a versão item a
+item chegaria a `{python} tam["itemn_vars"]` variáveis e
+`{python} tam["itemn_linhas"]` linhas. No conjunto, os `{python} base["pacotes"]`
+pacotes viram `{python} resumo["grupos"]` grupos (instância $\times$ classe).

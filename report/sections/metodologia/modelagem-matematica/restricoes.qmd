@@ -1,0 +1,90 @@
+### Restrições
+
+#### Atribuição completa
+
+$$\sum_{j \in J} z_{gj} = n_g \quad \forall g \in G \tag{R1}$$
+
+#### Capacidade de área
+
+$$\sum_{g \in G} a_g\ z_{gj} \ \le\ \sum_{t \in T} A_t\ y_{jt} \quad \forall j \in J \tag{R2}$$
+
+#### Capacidade de peso
+
+$$\sum_{g \in G} w_g\ z_{gj} \ \le\ \sum_{t \in T} W_t\ y_{jt} \quad \forall j \in J \tag{R3}$$
+
+As duas capacidades (R2 e R3) valem **simultaneamente**: o caminhão só é viável
+se respeita área e peso. Na prática a área morde primeiro — a densidade mediana
+dos pacotes (`{python} pac["dens_med"]` kg/m²) fica abaixo da razão do caminhão
+de `{python} frota["dens_165_tipo"]` m (`{python} frota["dens_165"]` kg/m²), mas
+a cauda da distribuição passa por cima dela.
+
+#### Um tipo por caminhão
+
+$$\sum_{t \in T} y_{jt} \le 1 \quad \forall j \in J \tag{R4}$$
+
+#### Vínculo grupo-caminhão
+
+$$z_{gj} \ \le\ n_g \sum_{t \in T} y_{jt} \quad \forall g \in G,\ j \in J \tag{R5}$$
+
+Caminhões fechados ficam vazios; por R4, o fator $\sum_t y_{jt}$ é binário.
+
+#### Ocupação do grupo
+
+$$u_{gj} \ \le\ z_{gj} \ \le\ n_g\, u_{gj} \quad \forall g \in G,\ j \in J \tag{R6}$$
+
+O par de desigualdades liga contagem e presença: $u_{gj} = 0$ obriga
+$z_{gj} = 0$ e, reciprocamente, qualquer carga positiva força $u_{gj} = 1$. É o
+que permite escrever as janelas em função da _presença_ do grupo, sem repetir a
+restrição para cada cópia.
+
+#### Partida após a disponibilidade
+
+$$\tau_j \ \ge\ av_g - M\ (1 - u_{gj}) \quad \forall g \in G,\ j \in J \tag{R7}$$
+
+#### Janela de consolidação
+
+$$\tau_j \ \le\ av_g + \Delta + M\ (1 - u_{gj}) \quad \forall g \in G,\ j \in J \tag{R8}$$
+
+#### Chegada dentro do prazo
+
+$$\tau_j \ \le\ dl_g - t_{\text{viagem}} + M\ (1 - u_{gj}) \quad \forall g \in G,\ j \in J \tag{R9}$$
+
+Juntas, R7–R9 caracterizam a viabilidade temporal do conjunto
+$S_j = \{g : u_{gj} = 1\}$ de grupos do caminhão $j$:
+
+$$\max_{g \in S_j} av_g \ \le\ \tau_j \ \le\
+\min\Big(\min_{g \in S_j} av_g + \Delta,\ \min_{g \in S_j} dl_g - t_{\text{viagem}}\Big),$$
+
+ou seja, $S_j$ é temporalmente viável se, e somente se,
+
+$$\max_{g \in S_j} av_g - \min_{g \in S_j} av_g \le \Delta
+\quad\text{e}\quad
+\max_{g \in S_j} av_g + t_{\text{viagem}} \le \min_{g \in S_j} dl_g.$$
+
+A escolha canônica é $\tau_j = \max_g av_g$: o caminhão parte assim que o último
+pacote fica pronto, o que maximiza a folga de prazo.
+
+<!-- **Auditoria.** A correspondência com o prazo é verificada duas vezes — por R8 no -->
+<!-- modelo e, na saída, por um recálculo independente de partida, chegada e folga -->
+<!-- por caminhão. Na solução heurística com $\Delta = 4$ h, os 311 caminhões -->
+<!-- auditados tiveram **zero violações** e folga mediana de 29,8 h (mínima 0,8 h). -->
+
+#### Quebra de simetria
+
+$$\sum_{t \in T} y_{jt} \ \ge\ \sum_{t \in T} y_{j+1,t}
+\quad \forall j \in \{1, \dots, m-1\} \tag{R10}$$
+
+R10 exige que os caminhões abertos ocupem um prefixo de $J$; é a ordenação já
+empregada em formulações de empacotamento com caixas idênticas [@salem2020] e
+**não exclui soluções**: dada qualquer solução viável com $o$ caminhões abertos,
+renumere-os $1, \dots, o$ — trocar um caminhão aberto por um slot vazio preserva
+viabilidade e custo —, e o ótimo é preservado. A restrição colapsa as $m!$
+ordenações de slot em uma única configuração de abertura, os $m-o$ slots vazios
+sendo exatamente os últimos.
+
+O que R10 **não** faz é fixar qual caminhão aberto é qual: com $o$ caminhões
+abertos, suas $o!$ permutações continuam produzindo soluções distintas de mesmo
+custo, que o _branch-and-bound_ não consegue distinguir [@margot2010;
+@ostrowski2011]. A simetria entre **pacotes idênticos**, por outro lado, já não
+existe: como não há um binário por cópia, mas apenas a contagem $z_{gj}$, não há
+identidades para permutar.

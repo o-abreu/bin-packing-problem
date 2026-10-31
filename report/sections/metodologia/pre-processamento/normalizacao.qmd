@@ -21,13 +21,14 @@ DELTA_H = 4.0   # janela de consolidação (h)
 VEL_KMH = 40.0  # velocidade da frota (trucks.csv)
 t_inicio = time.perf_counter()
 
-# unidades e calendário
-pedidos = items.copy()  # order_large.csv, com area_m2 e peso_kg já convertidos
-pedidos["av"] = pd.to_datetime(pedidos["Available_Time"])
-pedidos["dl"] = pd.to_datetime(pedidos["Deadline"])
-pedidos["dia"] = pedidos["av"].dt.date
+# unidades e calendário (`itens` é uma cópia por pacote: `pedidos` designa,
+# em todo o relatório, a tabela por Order_ID)
+itens = items.copy()
+itens["av"] = pd.to_datetime(itens["Available_Time"])
+itens["dl"] = pd.to_datetime(itens["Deadline"])
+itens["dia"] = itens["av"].dt.date
 km = dist.query("Source == 'City_61'").set_index("Destination")["Distance(M)"] / 1e3
-pedidos["dist_km"] = pedidos["Destination"].map(km)
+itens["dist_km"] = itens["Destination"].map(km)
 
 capacidade_area = trucks["area_capacity_m2"].to_numpy()
 capacidade_peso = trucks["weight_capacity_kg"].to_numpy()
@@ -57,7 +58,7 @@ contagens em vez de um binário por pacote.
 #| label: pp-instancias
 if not do_cache:
     grupos, dados_inst = [], {}
-    for (destino, dia), d in pedidos.groupby(["Destination", "dia"], sort=True):
+    for (destino, dia), d in itens.groupby(["Destination", "dia"], sort=True):
         origem = d["av"].min()
         av = ((d["av"] - origem).dt.total_seconds() / 3600).to_numpy()
         dl = ((d["dl"] - origem).dt.total_seconds() / 3600).to_numpy()

@@ -1,18 +1,58 @@
 ### Pacotes
 
-Os 4.635 pacotes não são 4.635 objetos distintos do ponto de vista do modelo. O
-`Item_ID` é único por construção, mas as combinações de **(área, peso)** são
-apenas **134**; os dez tipos mais frequentes concentram **37%** dos itens e o
-mais frequente aparece 233 vezes, enquanto 12 tipos ocorrem uma única vez. Se a
-identificação incluir também as janelas de tempo, o número de **classes**
-(área, peso, disponibilidade, prazo) sobe para **235** — e, por rota, a variedade
-é ainda menor: nenhuma rota passa de 20 classes. É essa duplicação que permite
+```{python}
+#| include: false
+#| label: pacotes-numeros
+# Contagens e extremos citados no texto, calculados uma vez a partir de
+# `order_large.csv` (carregado na seção de base de dados).
+tipos = items.groupby(["Area", "Weight"]).size()
+classes = items.drop_duplicates(["Area", "Weight", "Available_Time", "Deadline"])
+classes_por_rota = (items.drop_duplicates(
+    ["Destination", "Area", "Weight", "Available_Time", "Deadline"])
+    .groupby("Destination").size())
+rho_spearman = items[["area_m2", "weight_kg"]].corr(method="spearman").iloc[0, 1]
+
+pac = {
+    "pacotes": ptbr(len(items)),
+    "tipos": ptbr(len(tipos)),
+    "top10": f"{100 * tipos.nlargest(10).sum() / len(items):.0f}",
+    "freq_max": ptbr(tipos.max()),
+    "singleton": ptbr(int((tipos == 1).sum())),
+    "classes": ptbr(len(classes)),
+    "classes_rota": ptbr(int(classes_por_rota.max())),
+    "area_min": ptbr(items["area_m2"].min(), 2),
+    "area_max": ptbr(items["area_m2"].max(), 2),
+    "area_med": ptbr(items["area_m2"].median(), 2),
+    "peso_min": ptbr(items["weight_kg"].min()),
+    "peso_max": ptbr(items["weight_kg"].max()),
+    "peso_med": ptbr(items["weight_kg"].median()),
+    "pearson": ptbr(items[["area_m2", "weight_kg"]].corr().iloc[0, 1], 2),
+    "spearman": ptbr(rho_spearman, 2),
+    "dens_min": ptbr(items["dens"].min()),
+    "dens_max": ptbr(items["dens"].max()),
+    "dens_med": ptbr(items["dens"].median()),
+}
+```
+
+
+Os `{python} pac["pacotes"]` pacotes não são `{python} pac["pacotes"]` objetos
+distintos do ponto de vista do modelo. O `Item_ID` é único por construção, mas as
+combinações de **(área, peso)** são apenas **`{python} pac["tipos"]`**; os dez
+tipos mais frequentes concentram **`{python} pac["top10"]`%** dos itens e o mais
+frequente aparece `{python} pac["freq_max"]` vezes, enquanto
+`{python} pac["singleton"]` tipos ocorrem uma única vez. Se a identificação
+incluir também as janelas de tempo, o número de **classes** (área, peso,
+disponibilidade, prazo) sobe para **`{python} pac["classes"]`** — e, por rota, a
+variedade é ainda menor: nenhuma rota passa de
+`{python} pac["classes_rota"]` classes. É essa duplicação que permite
 descrever a instância por **grupos de pacotes idênticos**, com uma variável de
 contagem por grupo em vez de um binário por item — a decisão de modelagem
 adotada na formulação.
 
-Em termos de tamanho, os pacotes ocupam de 0,64 a 9,72 m² (mediana 1,25) e pesam
-de 46 a 3.130 kg (mediana 1.000) — ambos com cauda longa à direita, como mostra
+Em termos de tamanho, os pacotes ocupam de `{python} pac["area_min"]` a
+`{python} pac["area_max"]` m² (mediana `{python} pac["area_med"]`) e pesam de
+`{python} pac["peso_min"]` a `{python} pac["peso_max"]` kg (mediana
+`{python} pac["peso_med"]`) — ambos com cauda longa à direita, como mostra
 a @fig-pacotes-dist. As duas distribuições são assimétricas na mesma direção, o
 que já sugere que área e peso não variam de forma independente.
 
@@ -35,9 +75,11 @@ plt.tight_layout()
 ```
 
 Área e peso crescem juntos, mas **longe de proporcionalmente**: a correlação é
-de 0,68 (Pearson) e 0,72 (Spearman), e a razão entre eles — a densidade — varia
-de 40 a 1.623 kg/m², com mediana 589. A @fig-pacotes-corr mostra esse leque:
-sobre uma mesma área, o peso observado pode variar por um fator próximo de 10.
+de `{python} pac["pearson"]` (Pearson) e `{python} pac["spearman"]` (Spearman), e
+a razão entre eles — a densidade — varia de `{python} pac["dens_min"]` a
+`{python} pac["dens_max"]` kg/m², com mediana `{python} pac["dens_med"]`. A
+@fig-pacotes-corr mostra esse leque: sobre uma mesma área, o peso observado pode
+variar por um fator próximo de 10.
 
 ```{python}
 #| echo: false
@@ -47,7 +89,6 @@ sobre uma mesma área, o peso observado pode variar por um fator próximo de 10.
 #| fig-height: 2.5
 #| fig-cap: 'Relação entre área e peso dos pacotes (escalas logarítmicas, um ponto por item). As retas tracejadas marcam densidades constantes; a faixa ocupada mostra que a densidade varia cerca de 40 vezes entre os itens. Correlação de Spearman: 0,72.'
 
-rho = items[["area_m2", "weight_kg"]].corr(method="spearman").iloc[0, 1]
 fig, ax = plt.subplots()
 ax.scatter(items["area_m2"], items["weight_kg"], s=2, color="0.35", alpha=0.20,
            linewidths=0)
@@ -56,7 +97,7 @@ for dens_ref in (250, 500, 1000, 1500):
     ax.plot(x, dens_ref * x, linestyle="--", color="black", linewidth=0.5)
     ax.annotate(f"{dens_ref}", xy=(11.5, dens_ref * 11.5), fontsize=5,
                 ha="right", va="bottom")
-ax.text(0.03, 0.96, f"Spearman ρ = {rho:.2f}".replace(".", ","),
+ax.text(0.03, 0.96, f"Spearman ρ = {rho_spearman:.2f}".replace(".", ","),
         transform=ax.transAxes, va="top", fontsize=6)
 ax.set_xscale("log")
 ax.set_yscale("log")
