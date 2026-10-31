@@ -51,6 +51,21 @@ lang: pt-BR
 <!-- TODO antes da submissão: revisar o bloco de autores (afiliação/departamento
 por extenso) e decidir a ordem de autoria. -->
 
+```{python}
+#| label: setup-imports
+#| include: false
+# Importações de todo o relatório, num único lugar: os chunks das seções
+# incluídas compartilham o mesmo kernel, então basta carregá-las uma vez aqui.
+import json
+import time
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from matplotlib.collections import LineCollection
+```
+
 {{< include sections/introducao.qmd >}}
 
 {{< include sections/metodologia/index.qmd >}}

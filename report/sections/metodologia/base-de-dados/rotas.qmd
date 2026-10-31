@@ -20,8 +20,6 @@ figura mostra é a estrutura de _hub_: toda a carga entra e sai por um único n�
 #| fig-height: 1.65
 #| fig-cap: 'Rede de rotas do conjunto *Large-Scale Route Optimization*. Linhas cinza: os 1.891 pares de `distance.csv` (62 cidades). Linhas pretas: as 61 rotas diretas a partir do centro de distribuição (`City_61`), com espessura proporcional ao número de pacotes da rota (1 a 468). Posições por escalonamento multidimensional da matriz de distâncias — é uma projeção, não um mapa geográfico.'
 
-from matplotlib.collections import LineCollection
-
 pacotes = items["Destination"].value_counts()
 fig, ax = plt.subplots()
 

@@ -26,12 +26,6 @@ neste relatório já estão convertidos para m² e kg. Das 20 colunas disponíve
 
 ```{python}
 #| include: false
-from pathlib import Path
-
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-
 RAW = Path("../data/raw")  # o cwd de um chunk é o diretório do documento
 
 items = pd.read_csv(RAW / "order_large.csv")

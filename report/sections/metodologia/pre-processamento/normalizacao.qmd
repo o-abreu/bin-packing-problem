@@ -16,13 +16,6 @@ reaproveitado: o cache vale enquanto `data/pre-processed/` for mais novo que
 ```{python}
 #| echo: false
 #| label: pp-normalizacao
-import json
-import time
-from pathlib import Path
-
-import numpy as np
-import pandas as pd
-
 OUT = Path("../data/pre-processed")
 DELTA_H = 4.0   # janela de consolidação (h)
 VEL_KMH = 40.0  # velocidade da frota (trucks.csv)
