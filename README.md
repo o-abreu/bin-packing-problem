@@ -1,137 +1,181 @@
-# Bin Packing Problem (BPP) — SME 0110 · Programação Matemática
+# VSBPP de frotas heterogêneas em rotas de distribuição
 
-> Work in progress — the phased plan is in [`TODO.md`](./notes/TODO.md) and what has
-> already been measured is in [`EXPERIMENTOS.md`](./notes/EXPERIMENTOS.md).
+Trabalho de **SME 0110 — Programação Matemática** (ICMC-USP, 2º semestre de
+2026): o problema de empacotamento com caixas de tamanho e custo variáveis
+(VSBPP) aplicado a uma frota de caminhões real, resolvido por programação
+inteira mista e por um método alternativo.
 
-## Project
+> **Estado.** Modelagem e pré-processamento fechados; o relatório já traz
+> introdução, base de dados, pré-processamento, formulação e declaração de uso de
+> IA. A seção de experimentos (solvers) está em desenvolvimento — o rascunho
+> legado é `report/sections/experimento.qmd`, ainda não incluído no documento.
+> O plano por fases está em [`notes/TODO.md`](./notes/TODO.md) e **tudo o que já
+> foi medido** está em [`notes/EXPERIMENTOS.md`](./notes/EXPERIMENTOS.md) — leia
+> antes de refazer qualquer número.
 
-Implementation of the **Bin Packing Problem** (*Problema do Empacotamento*) for the
-course **SME 0110 – Programação Matemática** (ICMC-USP, 2nd semester 2026), applied to a
-real-world scenario following the official assignment (course brief kept locally
-as `Projeto_PM_BCC_2026.{md,pdf}` and not distributed with this repository).
+## O problema
 
-The work requires, per group:
+O enunciado parte do roteamento de veículos (VRP). Impondo **uma única parada por
+viagem**, cada rota degenera num VSBPP: os itens são pacotes e as caixas são
+caminhões de quatro tipos, cada um com área de piso $A_t$, capacidade de peso
+$W_t$ e custo $c_t$ por quilômetro. Como o custo de um caminhão na rota é
+$C_t = c_t\,d$, o objetivo é o **custo fixo da frota**, não o número de veículos.
 
-1. **Mathematical modeling** (MILP) of a chosen packing/resource-allocation scenario;
-2. **Exact solution** with a commercial solver (**Gurobi**) and a free solver (**SCIP**);
-3. **An alternative solution method** (heuristic such as FFD/BFD, or a meta-heuristic);
-4. A **technical report** (ABNT/IEEE), structured in the 5 mandated sections;
-5. **Two presentations** during the semester + final delivery on e-disciplinas
-   (single compacted archive: code + test instances + PDF report).
+A instância é **bidimensional**: um caminhão só é viável se respeitar área **e**
+peso. Nos dados a área morde primeiro — a densidade mediana dos pacotes
+(589 kg/m²) fica próxima da razão do caminhão de 16,5 m (671 kg/m²), e a
+comparação rota a rota dá 270 caminhões por área contra 226 por peso.
 
-## Chosen scenario
+O modelo é o **agregado R1–R10**, descrito em
+[`report/sections/metodologia/modelagem-matematica.qmd`](./report/sections/metodologia/modelagem-matematica.qmd):
+a instância é definida sobre **grupos de pacotes idênticos** (mesma área, peso,
+disponibilidade e prazo), cada um com multiplicidade $n_g$, e a decisão é *quantos*
+pacotes de cada grupo vão em cada caminhão ($z_{gj}$), mais o tipo do caminhão
+($y_{jt}$) e o instante de partida ($\tau_j$). Essa agregação é o que torna as
+instâncias resolvíveis: 4.635 pacotes viram 239 grupos, e nenhuma instância passa
+de 11 grupos.
 
-**Alocação de Cargas em Veículos / Contêineres** — minimize the number of
-trucks/containers needed to transport a set of goods under limited floor area and
-weight. The assignment's generic BPP MILP
+## Dados
 
-$$\min \sum_{j \in J} y_j \quad \text{s.t.} \quad \sum_{j} x_{ij} = 1 \;\; \forall i, \qquad \sum_{i} w_i x_{ij} \le C y_j \;\; \forall j$$
+Fonte: [Large-Scale Route Optimization](https://www.kaggle.com/datasets/mexwell/large-scale-route-optimization)
+(MIT), espelho dos dados de amostra do acelerador da Microsoft
+([`dstoolkit-route-optimization`](https://github.com/microsoft/dstoolkit-route-optimization)).
+É uma **amostra publicada** "inspirada num cenário real" de um cliente de
+manufatura — não são dados brutos de empresa.
 
-is generalized in the two directions the real instance forces:
+| arquivo | o que é |
+| --- | --- |
+| `data/raw/order_large.csv` | 4.635 pacotes, 365 pedidos, 61 rotas — a instância principal |
+| `data/raw/order_small.csv` | 10 pacotes em 2 rotas — caso de teste mínimo |
+| `data/raw/distance.csv` | matriz de distâncias **em metros** (apesar do nome `Distance(M)`) |
+| `data/raw/trucks.csv` | frota, transcrita de `src/core/structure.py` do repositório de origem |
+| `data/pre-processed/` | instâncias e grupos gerados — versionados, regeneráveis em ~0,2 s |
 
-- **variable-sized bins with a cost (VSBPP):** the bins are four truck classes,
-  each with floor area $A_t$, weight capacity $W_t$ and a cost $C_t$ per
-  kilometre, so the objective is the cost of the fleet
-  ($C_t \times \mathrm{dist}(o,d)$ per truck), not the number of trucks;
-- **two dimensions:** a truck is loaded only if it respects **both** area and
-  weight, which makes the instance a two-dimensional vector packing problem —
-  and, in these data, area is the binding resource more often than weight.
+`Area` e `Weight` vêm escaladas por $10^4$ (divida por 10.000 para m² e kg). Os
+arquivos brutos são **versionados e nunca re-baixados**. Proveniência,
+licença e anotações coluna a coluna: [`notes/DATASETS.md`](./notes/DATASETS.md).
 
-**Dataset:** [Large-Scale Route
-Optimization](https://www.kaggle.com/datasets/mexwell/large-scale-route-optimization)
-(MIT), the sample data of Microsoft's route-optimization accelerator
-([`microsoft/dstoolkit-route-optimization`](https://github.com/microsoft/dstoolkit-route-optimization)),
-committed to `data/raw/`: **4,635 packages** over 365 orders, **61
-origin–destination pairs** out of a single distribution centre (`City_61`), and a
-fleet of four truck types. `Area` and `Weight` come scaled by $10^4$;
-`distance.csv` is in metres. It is a **published sample** "inspired by a
-real-world scenario" of a manufacturing customer, not raw company data.
+O conjunto de tarifas de frete usado no início do projeto foi **descartado** como
+instância primária (o `minimum cost` fica abaixo do preço implícito em 78% das
+classes) e permanece apenas como estudo de caso de dados inconsistentes.
 
-**Scope:** we solve the *loading* subproblem under a **direct-trip policy** (one
-stop per trip), so each route becomes an independent VSBPP instance and its
-optimum is an **upper bound** on the cost of the underlying VRP — not the VRP
-optimum.
+## Relatório
 
-The freight-tariff dataset used earlier in the project was dropped as the primary
-instance — its `minimum cost` column places the floor below the implied price in
-78% of the classes — and remains documented as a case study of inconsistent
-data. Research, provenance and column-by-column notes:
-[`DATASETS.md`](./notes/DATASETS.md).
-
-## Assignment & schedule
-
-Requirements, grading breakdown, and dates are specified in the official assignment
-(`Projeto_PM_BCC_2026.pdf` — kept locally, not tracked in this repository) and in the
-work plan [`TODO.md`](./notes/TODO.md).
-
-## Report
-
-The deliverable is `report/main.qmd` — an IEEE two-column article written in
-pt-BR, whose body is assembled from included files:
+O entregável é `report/main.qmd`: artigo IEEE em duas colunas, escrito em pt-BR,
+montado a partir de arquivos incluídos.
 
 ```
 report/
-├── main.qmd                      # front matter + includes, nothing else
-├── refs.bib
-├── _extensions/ieee/             # vendored journal format (must sit next to main.qmd)
+├── main.qmd                       # front matter + inclusões
+├── refs.bib                       # 23 entradas verificadas (DOI)
+├── _extensions/ieee/              # formato de periódico vendorizado
 └── sections/
-    ├── introducao.qmd            # I. Introdução
-    ├── disponibilidade.qmd       # data and code availability
-    ├── declaracao-uso-ia.qmd     # AI-use declaration
-    ├── experimento.qmd           # draft, not included yet
-    └── metodologia/
-        ├── index.qmd             # II. Metodologia + the two includes below
-        ├── base-de-dados.qmd     # fleet, instance statistics, 3 figures
-        └── modelagem-matematica.qmd  # MILP formulation (R1–R11)
+    ├── introducao.qmd             # I. Introdução
+    ├── metodologia/
+    │   ├── index.qmd              # II. Metodologia (inclui os três abaixo)
+    │   ├── base-de-dados/
+    │   │   ├── index.qmd          #   A. Base de dados + setup compartilhado
+    │   │   ├── frota.qmd          #     1) Frota (tabela + densidade)
+    │   │   ├── pacotes.qmd        #     2) Pacotes (distribuições e correlação)
+    │   │   ├── pedidos.qmd        #     3) Pedidos (volume, tempo, janela)
+    │   │   └── rotas.qmd          #     4) Rotas (rede e limites por área/peso)
+    │   ├── pre-processamento/
+    │   │   ├── index.qmd          #   C. Pré-processamento (código executado)
+    │   │   ├── normalizacao.qmd   #     1) Normalização e recorte
+    │   │   ├── reducao.qmd        #     2) Redução do modelo
+    │   │   └── custo.qmd          #     3) Custo do pré-processamento
+    │   └── modelagem-matematica.qmd  # D. Modelo agregado R1–R10 + complexidade
+    ├── disponibilidade.qmd        # III. Disponibilidade de dados e código
+    ├── declaracao-uso-ia.qmd      # IV. Declaração de uso de IA
+    └── experimento.qmd            # rascunho legado — NÃO incluído
 ```
 
-Include paths are resolved **relative to `main.qmd`**, even when nested — that is
-why `metodologia/index.qmd` writes `sections/metodologia/base-de-dados.qmd`
-rather than a path relative to itself.
+Os caminhos das inclusões são resolvidos **a partir de `main.qmd`**, mesmo
+quando aninhados — por isso `metodologia/index.qmd` escreve
+`sections/metodologia/base-de-dados/index.qmd`, e não um caminho relativo a si.
 
 ```sh
-devenv shell -- render-report   # writes report/output/main.pdf
+devenv shell -- render-report      # report/main.qmd -> report/output/main.pdf
 ```
 
-Status of the five sections mandated by the assignment (§4): Introdução ✅,
-Modelagem Matemática ✅ (as II.B), Solução via *Solvers* ⬜, Método de Solução
-Alternativo ⬜, Conclusão ⬜ — see [`TODO.md`](./notes/TODO.md) phases 3–5.
+O PDF fica em `report/output/` (ignorado pelo git); `report/main.pdf` é a cópia
+publicada.
 
-## Repository layout
+**Situação das seções exigidas pelo enunciado (§4):** Introdução ✅ · Modelagem
+Matemática ✅ · Solução via *solvers* ⬜ (Gurobi e HiGHS já instalados; falta o
+harness e a coleta das quatro métricas) · Método de Solução Alternativo ⬜ ·
+Conclusão ⬜.
 
-```
-data/raw/          # dataset as published (MIT) — tracked, never re-fetched
-notes/             # DATASETS.md, TODO.md, EXPERIMENTOS.md (research + plan + results)
-report/            # Quarto sources for the article (see above)
-scripts/           # experiment harnesses (symmetry-breaking benchmarks)
-AGENTS.md          # guidance for coding agents
-devenv.nix/.yaml   # declarative environment; pyrightconfig.json for type checking
-```
+## Ambiente
 
-## Environment
-
-Declaratively managed with [devenv](https://devenv.sh) (Nix), with direnv
-integration:
+Tudo é declarativo, via [devenv](https://devenv.sh) + direnv. **Nada de
+`pip install` ou downloads avulsos**: dependências Python vão para
+`requirements.txt` e ferramentas de sistema para `devenv.nix`.
 
 ```sh
-direnv allow                     # or: devenv shell
-devenv shell -- render-report    # report/main.qmd -> report/output/main.pdf
+direnv allow                     # ou: devenv shell
+devenv shell -- render-report    # gera o PDF
+devenv shell -- python scripts/aggregated_model.py City_54
 ```
 
-- **Quarto 1.6.43**, pinned through the `nixpkgs-quarto` input — the vendored IEEE
-  extension is built against 1.5/1.6.
-- **PDF engine `pdflatex`** with TeX Live from the flake (IEEEtran, orcidlink,
-  physics, mhchem). Quarto whitelists only pdflatex/xelatex/lualatex/latexmk.
-- **Python venv** at `.devenv/state/venv` with `pulp` (CBC), `highspy`, `gurobipy`,
-  `pandas`, `matplotlib`, `pandas-stubs`. `devenv.nix` exports `QUARTO_PYTHON`
-  pointing at that interpreter, so the notebook chunks always run in the venv.
-- **Solvers:** HiGHS and CBC are available out of the box. Gurobi needs the
-  academic licence file (`gurobi.lic`, gitignored) and was **unavailable** at the
-  last recorded run — the assignment asks for one commercial and one free solver,
-  so this is tracked as a risk in [`TODO.md`](./notes/TODO.md) phase 3.
+- **Quarto 1.6.43**, fixado pelo input `nixpkgs-quarto`. Um *wrapper* em
+  `devenv.nix` fixa `QUARTO_PYTHON` no interpretador do venv — sem ele, o Quarto
+  cai no `python3` do `PATH` e os chunks falham com `ModuleNotFoundError: yaml`.
+- **pdflatex** com TeX Live do flake (IEEEtran, orcidlink, physics, mhchem).
+  O Quarto só aceita pdflatex/xelatex/lualatex/latexmk — `tectonic` quebra o
+  template.
+- **Python 3.12** em `.devenv/state/venv`, com `pulp`, `highspy`, `gurobipy`,
+  `pandas`, `matplotlib`, `pyarrow`, `ipykernel`/`nbclient`/`nbformat`.
+- **Solvers:** HiGHS (`highspy`) e CBC (via PuLP) de fábrica; **Gurobi 13.0.3**
+  (`pkgs.gurobi` + `gurobipy==13.0.3`) com licença acadêmica em `gurobi.lic` na
+  raiz — arquivo **ignorado pelo git** e apontado por `GRB_LICENSE_FILE` no
+  `devenv.nix`. Sem a licença, o Gurobi cai na versão restrita (2.000
+  variáveis/restrições), insuficiente para as instâncias.
 
-## License
+## Scripts
 
-Academic coursework — all rights reserved to the group members until submission.
-Dataset licensing (MIT) and provenance are documented in
-[`DATASETS.md`](./notes/DATASETS.md).
+Todos rodam no venv do projeto e imprimem tabelas prontas para o relatório.
+
+| script | o que mede |
+| --- | --- |
+| `scripts/aggregated_model.py` | modelo agregado R1–R10: objetivo, nós e tempo por instância (`--all`, `--compare`) |
+| `scripts/symmetry_benchmark.py` | quebra de simetria no modelo item a item (R1–R8 vs R9 vs R10 vs R9–R10) |
+| `scripts/package_symmetry_benchmark.py` | ordenação de pacotes idênticos (R11), com validação por enumeração exaustiva |
+
+```sh
+devenv shell -- python scripts/aggregated_model.py City_54 City_48 --compare
+devenv shell -- python scripts/symmetry_benchmark.py
+devenv shell -- python scripts/package_symmetry_benchmark.py
+```
+
+## Estrutura do repositório
+
+```
+data/raw/           # dataset publicado (MIT) — versionado, nunca re-baixado
+data/pre-processed/ # instâncias e grupos gerados pelo pré-processamento
+notes/              # DATASETS.md, TODO.md, EXPERIMENTOS.md
+report/             # fontes Quarto do artigo (ver acima)
+scripts/            # harnesses de experimento
+AGENTS.md           # orientação para agentes de código
+devenv.nix/.yaml    # ambiente declarativo; requirements.txt para o venv
+pyrightconfig.json  # checagem de tipos (basedpyright)
+```
+
+## Convenções
+
+- **Documentação em pt-BR** (relatório, `notes/`, este README); código e
+  identificadores em inglês. `AGENTS.md` fica em inglês, por ser orientação de
+  ferramenta.
+- **Nada de instalação imperativa.** Faltou um módulo? `requirements.txt`.
+  Faltou um programa? `devenv.nix`.
+- **Números do relatório vêm do código**, não de digitação: o pré-processamento e
+  as tabelas usam execução inline/`output: asis`, e o que foi medido fica em
+  `notes/EXPERIMENTOS.md`.
+- Tabelas e figuras seguem o formato IEEE vendorizado; tabelas em LaTeX cru
+  precisam do bloco multi-linha (uma tabela numa única linha faz o Quarto
+  truncar o documento).
+
+## Licença
+
+Trabalho acadêmico — direitos reservados aos integrantes do grupo até a entrega.
+O conjunto de dados é MIT; proveniência em [`notes/DATASETS.md`](./notes/DATASETS.md).
