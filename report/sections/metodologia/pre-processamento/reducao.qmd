@@ -132,21 +132,43 @@ slots nas 111 instâncias. Nenhuma instância passa de
 
 
 
+```{python}
+#| echo: false
+#| output: asis
+# A tabela é montada como texto LaTeX para que o corte de 3 cm / 5,4 cm da
+# extensão ieee seja preservado (tabelas em markdown viram longtable e não
+# compilam em duas colunas). Os números vêm do pré-processamento.
+modelo = r"""
 \begin{table}[!ht] \centering
 \begin{tabular}{@{}p{3.0cm}p{5.4cm}@{}}
 \toprule
 Corte & Efeito medido \\
 \midrule
-Teto de slots pelo custo & maior instância (\texttt{City\_58}, 198 pacotes): 10
-caminhões na construção heurística, 16 slots; 465 slots para 111 instâncias \\
+Teto de slots pelo custo & maior instância (\texttt{@ID@}, @N@ pacotes): @BINS@
+caminhões na construção heurística, @M@ slots; @MTOT@ slots para @INST@
+instâncias \\
 Filtro de tipos & nenhum par domina na frota global; vale por instância \\
-Fechamento por inspeção & 44 das 111 instâncias resolvidas sem solver \\
+Fechamento por inspeção & @FECHADAS@ das @INST@ instâncias resolvidas sem solver \\
 \bottomrule
 \end{tabular}
 \caption{Cortes de pré-processamento e efeito medido. O primeiro é contado em
 slots; os dois últimos, em instâncias afetadas. Números produzidos pelos blocos
 de código desta seção.} \label{tab-preprocessamento}
 \end{table}
+"""
+valores = {
+    "ID": resumo["maior_id"].replace("_", r"\_"),
+    "N": resumo["maior_n"],
+    "BINS": resumo["maior_bins"],
+    "M": resumo["maior_m"],
+    "MTOT": resumo["m_total"],
+    "INST": resumo["instancias"],
+    "FECHADAS": resumo["fechadas"],
+}
+for chave, valor in valores.items():
+    modelo = modelo.replace(f"@{chave}@", str(valor))
+print(modelo)
+```
 
 Não há etapa de **rotulagem** de pacotes. Na versão item a item do modelo, a
 ordem dos índices importava — restrições de quebra de simetria davam ao pacote
