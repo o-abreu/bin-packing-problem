@@ -1,0 +1,76 @@
+### Frota
+
+A frota tem quatro tipos de caminhão, cada um definido pela área de piso $A_t$,
+pela capacidade de peso $W_t$ e pelo custo $C_t$ por quilômetro — os três
+parâmetros que, multiplicados pela distância da rota, dão o custo fixo de cada
+viagem. A tabela a seguir reúne esses valores e dois indicadores derivados que
+serão úteis na discussão do modelo.
+
+<!-- A extensão ieee não renderiza tabelas em markdown; esta é escrita em LaTeX
+     cru, como as tabelas da seção de modelagem. -->
+
+\begin{table*}[!ht] \centering \begin{tabular}{@{}lrrrrrr@{}} \toprule
+Comprimento & $A_t$ (m$^2$) & $W_t$ (kg) & $C_t$ (US\$/km) & $C_t/A_t$
+(US\$/m$^2$) & $C_t/W_t$ (US\$/kg) & $W_t/A_t$ (kg/m$^2$) \\ \midrule 16,5 m &
+40,25 & 27.000 & 10,00 & 0,248 & 0,00037 & 671 \\ 12,5 m & 30,25 & 24.000 & 9,00
+& 0,298 & 0,00038 & 793 \\ 9,6 m & 20,93 & 14.000 & 6,50 & 0,311 & 0,00046 & 669
+\\ 7,6 m & 16,56 & 8.000 & 5,50 & 0,332 & 0,00069 & 483 \\ \bottomrule
+\end{tabular} \caption{Frota do conjunto \textit{Large-Scale Route
+Optimization}: capacidade de área e de peso, custo por quilômetro e indicadores
+derivados. Custos calculados a partir de \texttt{cost\_per\_km} e capacidades de
+\texttt{area\_capacity\_m2} e \texttt{weight\_capacity\_kg} de
+\texttt{trucks.csv}; o comprimento identifica a classe.} \label{tab-frota}
+\end{table*}
+
+O custo por unidade de capacidade é monotônico no porte do veículo: cai de US\$
+0,332/m² no caminhão de 7,6 m para US\$ 0,248/m² no de 16,5 m (e de US\$
+0,00069/kg para US\$ 0,00037/kg), de modo que "maior é mais barato por unidade".
+O indicador oposto, porém, não é monotônico: a densidade máxima do caminhão
+**cai** com o porte, de 793 kg/m² no de 12,5 m para 671 kg/m² no de 16,5 m e 483
+kg/m² no de 7,6 m. As duas tendências apontam para direções diferentes, e é essa
+tensão que faz da escolha de classe uma decisão de otimização, não uma regra de
+bolso.
+
+Nenhum pacote excede a maior classe — o item mais pesado tem 3.130 kg e o maior
+em área, 9,72 m², contra 27.000 kg e 40,25 m² —, de modo que a frota, por si só,
+**não torna nenhuma instância inviável**: ela encarece a solução, não a impede.
+
+A densidade é o parâmetro que decide qual dos dois recursos se esgota primeiro:
+uma carga cuja densidade fica abaixo de $W_t/A_t$ enche a área do caminhão antes
+de atingir o peso máximo, e acima desse limiar acontece o contrário. A
+@fig-densidade mostra a distribuição item a item. Tomada item a item, a mediana
+é de **589 kg/m²** — à esquerda das razões $W_t/A_t$ dos caminhões de 16,5 m
+(671), 12,5 m (793) e 9,6 m (669), e à direita da do caminhão de 7,6 m (483) —,
+embora a cauda se estenda bem acima delas. Somando a carga de uma rota, a
+densidade agregada cai para **554 kg/m²**, e é esse valor que decide o regime de
+quase todas as rotas.
+
+```{python}
+#| echo: false
+#| warning: false
+#| label: fig-densidade
+#| fig-width: 3.3
+#| fig-height: 2.4
+#| fig-cap: 'Densidade dos pacotes de `order_large.csv`, uma observação por item (kg/m²). Linhas tracejadas: razão $W_t/A_t$ de cada tipo de caminhão — abaixo dela a área se esgota antes do peso. Linha cheia: mediana dos itens (589 kg/m²). A do caminhão de 9,6 m (669 kg/m²) praticamente coincide com a do de 16,5 m.'
+
+fig, ax = plt.subplots()
+ax.hist(items["dens"], bins=40, color="0.78", edgecolor="black", linewidth=0.3)
+ax.set_xlabel("densidade do pacote (kg/m²)")
+ax.set_ylabel("pacotes")
+ax.set_xlim(0, 1600)
+
+topo = ax.get_ylim()[1] * 1.22  # espaço para os rótulos das linhas de referência
+ax.set_ylim(0, topo)
+alturas = {"7.6": 0.96, "16.5": 0.86, "12.5": 0.76}
+for _, row in trucks.iterrows():
+    ax.axvline(row["ratio"], color="black", linewidth=0.6, linestyle="--")
+    if str(row["truck_type"]) in alturas:  # o de 9,6 m coincide com o de 16,5 m
+        ax.text(row["ratio"], alturas[str(row["truck_type"])] * topo,
+                f'{row["truck_type"]} m'.replace(".", ","), rotation=90,
+                ha="right", va="top", fontsize=6)
+ax.axvline(dens_med, color="black", linewidth=1.1)
+ax.annotate("mediana", xy=(dens_med, 0.60 * topo), xytext=(920, 0.86 * topo),
+            ha="left", va="center", fontsize=6,
+            arrowprops=dict(arrowstyle="->", linewidth=0.5))
+plt.tight_layout()
+```

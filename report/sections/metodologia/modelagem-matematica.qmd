@@ -34,8 +34,7 @@ Ser NP-difícil, porém, não torna o MILP inútil: BPP e VSBPP já são NP-dif�
 [@karp1972] e solvers exatos resolvem instâncias grandes quando a formulação é
 boa. O que pesa aqui é a combinação de duas dimensões com a escolha da classe:
 não há garantia de aproximação e o esforço exato cresce rápido com o número de
-itens. Por isso usamos a **programação linear inteira mista** (MILP) exata nas
-instâncias pequenas e limites inferiores com heurísticas nas maiores.
+itens.
 
 Esta seção formaliza um **VSBPP multidimensional** com frota heterogênea,
 instanciado no dataset de roteirização da Microsoft [@routeopt2022;
@@ -46,10 +45,20 @@ item tem uma **janela de tempo** (disponibilidade e prazo).
 
 ### Conjuntos
 
-- $I = \{1, \dots, n\}$: pacotes destinados a uma dada rota
-- $T = \{1, \dots, 4\}$: tipos de caminhão disponíveis
+- $G = \{1, \dots, G\}$: **grupos de pacotes idênticos** — pacotes com a mesma
+  área, peso, disponibilidade e prazo —, cada grupo com multiplicidade $n_g$; o
+  total de pacotes da instância é $n = \sum_g n_g$;
+- $T = \{1, \dots, 4\}$: tipos de caminhão disponíveis;
 - $J = \{1, \dots, m\}$: _slots_ (posições) de caminhão disponíveis, com
-  $m \le n$ (um caminhão aberto leva ao menos um pacote)
+  $m \le n$.
+
+A instância é definida **sobre grupos**, e não sobre pacotes. Isso não perde
+nada: pacotes de um mesmo grupo são indistinguíveis para todas as restrições —
+mesma área, mesmo peso e mesma janela —, de modo que a única informação que os
+distingue é **quantos** vão em cada caminhão. A decisão $z_{gj}$ é, portanto,
+uma contagem, e a reconstrução de uma solução pacote a pacote é uma etapa de
+pós-processamento (distribuir as identidades dentro do grupo), sem efeito sobre
+custo ou viabilidade.
 
 Um **slot** não é um caminhão específico, é uma **posição abstrata** que o
 modelo pode deixar vazia ou preencher com um caminhão de algum tipo. Como o
@@ -59,41 +68,44 @@ tipo $t$; se nenhum tipo for atribuído, o slot permanece fechado (R4–R5). Os
 slots são intercambiáveis entre si — trocar dois produz a mesma solução física
 —, o que gera **simetria de permutação**: cada plano de carregamento tem até
 $m!$ representações de custo idêntico e de mesmo limitante [@margot2010]. A
-simetria não altera o valor ótimo, mas encarece a prova de otimalidade. Como
-cópias simétricas têm o mesmo limitante, o _branch-and-bound_ não consegue podar
+simetria não altera o valor ótimo, mas encarece a prova de otimalidade: cópias
+simétricas têm o mesmo limitante, então o _branch-and-bound_ não consegue podar
 uma a partir do resultado da outra, e o esforço passa a acompanhar o número de
 rótulos em vez do número de soluções distintas [@ostrowski2011]. A relaxação
 linear também fica degenerada, com vértices fracionários equivalentes
 [@sherali2001], e as desigualdades válidas obtidas para uma cópia não se
 transpõem automaticamente às demais [@margot2010] — o que motivou as técnicas de
 quebra baseadas em órbitas [@ostrowski2011; @kaibel2008]. Por isso o modelo
-inclui as restrições de quebra R9–R11: R9–R10 tratam da permutação de slots e
-R11 da repetição de pacotes idênticos.
+inclui a restrição de quebra **R10**, que fixa o padrão de abertura.
+
+O agrupamento já elimina, por construção, a simetria **entre pacotes
+idênticos**: não há um índice por pacote para permutar. Resta a simetria entre
+slots, tratada na subseção de quebra de simetria.
 
 ### Parâmetros
 
 O _dataset_ de referência nos fornece 20 colunas distintas, das quais **11** são
 incorporadas enquanto parâmetros em nossa modelagem. Esta correlação está
-descrita nas quatro tabelas a seguir, sobre devemos fazer algumas considerações
-importantes.
+descrita nas quatro tabelas 3 à 6, sobre as quais devemos fazer algumas
+considerações importantes.
 
 <!-- Início das tabelas, aqui descritas em latex cru por razão de incompatibilidade da extensão ieee para renderizar tabelas a partir da sua representação em markdown. -->
 
 \begin{table*}[!t] \centering
 \begin{tabular}{@{}p{0.09\linewidth}p{0.53\linewidth}p{0.22\linewidth}p{0.08\linewidth}@{}}
-\toprule Parâmetro & Descrição & Coluna & Unidade \\ \midrule $i$ & índice do
-pacote & \texttt{Item\_ID} & --- \\ $a_i$ & área ocupada pelo pacote $i$
-($\ge 0$) & \texttt{Area} & m$^2$ \\ $w_i$ & peso do pacote $i$ ($> 0$) &
-\texttt{Weight} & kg \\ $av_i$ & instante de disponibilidade do pacote $i$
-($\ge 0$) & \texttt{Available\_Time} & h \\ $dl_i$ & prazo de entrega do pacote
-$i$ ($\ge 0$) & \texttt{Deadline} & h \\ --- & origem da rota (constante
-\texttt{City\_61}) & \texttt{Source} & --- \\ --- & destino da rota (define a
-instância) & \texttt{Destination} & --- \\ --- & identificador de pedido; não
-entra no modelo & \texttt{Order\_ID} & --- \\ --- & identificador de material;
-não entra no modelo & \texttt{Material\_ID} & --- \\ --- & classe de perigo;
-excluída por vacuidade & \texttt{Danger\_Type} & --- \\ \bottomrule
-\end{tabular} \caption{Colunas de \texttt{order\_large.csv} e
-\texttt{order\_small.csv}: 10 colunas, 5 delas viram parâmetros.}
+\toprule Parâmetro & Descrição & Coluna & Unidade \\ \midrule $g$ & grupo de
+pacotes idênticos (derivado das quatro colunas seguintes) & --- & --- \\ $a_g$ &
+área de um pacote do grupo $g$ ($\ge 0$) & \texttt{Area} & m$^2$ \\ $w_g$ & peso
+de um pacote do grupo $g$ ($> 0$) & \texttt{Weight} & kg \\ $av_g$ &
+disponibilidade dos pacotes do grupo $g$ ($\ge 0$) & \texttt{Available\_Time} &
+h \\ $dl_g$ & prazo dos pacotes do grupo $g$ ($\ge 0$) & \texttt{Deadline} & h
+\\ --- & origem da rota (constante \texttt{City\_61}) & \texttt{Source} & --- \\
+--- & destino da rota (define a instância) & \texttt{Destination} & --- \\ --- &
+identificador de pedido; não entra no modelo & \texttt{Order\_ID} & --- \\ --- &
+identificador de material; não entra no modelo & \texttt{Material\_ID} & --- \\
+--- & classe de perigo; excluída por vacuidade & \texttt{Danger\_Type} & --- \\
+\bottomrule \end{tabular} \caption{Colunas de \texttt{order\_large.csv} e
+\texttt{order\_small.csv}: 10 colunas, 5 delas viram parâmetros de grupo.}
 \label{param-order} \end{table*}
 
 \begin{table*}[!t] \centering
@@ -124,11 +136,21 @@ parâmetros definem a frota.} \label{param-trucks} \end{table*}
 \toprule Parâmetro & Descrição & Unidade \\ \midrule $C_t$ & custo fixo de um
 caminhão do tipo $t$ ($= c_t\,d$) & US\$ \\ $t_{\text{viagem}}$ & tempo de
 viagem na rota ($= d/v$) & h \\ $\Delta$ & janela de consolidação ($= 4$ h) & h
-\\ $M$ & constante de desativação ($\ge \max_i dl_i - \min_i av_i$) & h \\
+\\ $M$ & constante de desativação ($\ge \max_g dl_g - \min_g av_g$) & h \\
 \bottomrule \end{tabular} \caption{Parâmetros derivados e de política, que não
 vêm de coluna do dataset.} \label{param-derived} \end{table*}
 
 <!-- Término das tabelas -->
+
+#### Multiplicidade de pacotes idênticos
+
+A multiplicidade $n_g$ não vem de coluna alguma: é a contagem de pacotes que
+compartilham a mesma quádrupla (área, peso, disponibilidade, prazo). No conjunto
+completo há 4.635 pacotes para 235 classes distintas — 239 grupos quando contados
+por instância —, e nenhuma instância passa de 11 grupos, o que encurta a
+formulação em uma ordem de grandeza (ver a análise de complexidade). Se todos os
+pacotes fossem distintos, teríamos $n_g = 1$ para todo $g$ e a formulação abaixo
+coincidiria com a versão item a item.
 
 #### Área enquanto uma grandeza vetorial
 
@@ -146,7 +168,7 @@ poderia ocorrer na atual configuração.
 
 #### Grandezas de tempo
 
-As grandezas — $av_i$, $dl_i$, $\tau_j$, $\Delta$ e $M$ — são medidas em **horas
+As grandezas — $av_g$, $dl_g$, $\tau_j$, $\Delta$ e $M$ — são medidas em **horas
 a partir de uma origem comum** (o menor `Available_Time` da instância): o
 dataset traz carimbos de data e hora, que precisam virar números para entrar nas
 restrições lineares, e a hora é a unidade coerente com $v$ (km/h).
@@ -170,21 +192,28 @@ terceira restrição do problema:
 > horas)" \[Tradução nossa]
 
 Adotamos o valor sugerido, $\Delta = 4$ h. As restrições 2 e 4 do mesmo `README`
-fundamentam, respectivamente, R6 (o caminhão só parte quando todos os itens
-estão disponíveis) e R8 (entrega antes do prazo). Não fosse especificado, um
+fundamentam, respectivamente, R7 (o caminhão só parte quando todos os pacotes
+estão disponíveis) e R9 (entrega antes do prazo). Não fosse especificado, um
 caminhão poderia esperar dias para consolidar carga. No mais, o dataset não
-precifica espera; por isso o modelo espera até o limite dos prazos (R7–R8), e
+precifica espera; por isso o modelo espera até o limite dos prazos (R8–R9), e
 essa ausência é apenas registrada.
 
 ### Variáveis de decisão
 
-- $x_{ij} \in \lbrace0,1\rbrace$: 1 se o pacote $i$ vai no caminhão $j$, 0 c.c.;
+- $z_{gj} \in \lbrace0, 1, \dots, n_g\rbrace$ (inteiro): quantos pacotes do
+  grupo $g$ viajam no caminhão $j$;
+- $u_{gj} \in \lbrace0,1\rbrace$: 1 se ao menos um pacote do grupo $g$ viaja no
+  caminhão $j$, 0 c.c.;
 - $y_{jt} \in \lbrace0,1\rbrace$: 1 se o caminhão $j$ é do tipo $t$, 0 c.c.;
 - $\tau_j \ge 0$ (h): instante de partida do caminhão $j$.
 
-O modelo decide **o empacotamento** (quais pacotes viajam juntos), o **tipo** de
-cada caminhão e **quando** ele parte. Os slots são idênticos antes da escolha do
-tipo, o que cria simetria de permutação — quebrada por R9–R10.
+O modelo decide **o empacotamento** (quantos pacotes de cada grupo viajam
+juntos), o **tipo** de cada caminhão e **quando** ele parte. O binário $u_{gj}$
+não é uma segunda decisão: é o indicador de ocupação que as restrições temporais
+precisam, já que a janela depende de _haver_ carga do grupo no caminhão, e não
+de quantas unidades há. Quando $n_g = 1$, $u_{gj} = z_{gj}$ e a formulação volta
+a ser a versão item a item. Os slots são idênticos antes da escolha do tipo, o
+que cria simetria de permutação — quebrada por R10.
 
 ### Função objetivo
 
@@ -201,57 +230,65 @@ sempre melhor que abrir outro — é o custo fixo clássico do VSBPP [@friesen19
 
 #### Atribuição completa
 
-$$\sum_{j \in J} x_{ij} = 1 \quad \forall i \in I \tag{R1}$$
-
-Cada pacote viaja em **exatamente um** caminhão; pacotes são indivisíveis.
+$$\sum_{j \in J} z_{gj} = n_g \quad \forall g \in G \tag{R1}$$
 
 #### Capacidade de área
 
-$$\sum_{i \in I} a_i\ x_{ij} \ \le\ \sum_{t \in T} A_t\ y_{jt} \quad \forall j \in J \tag{R2}$$
+$$\sum_{g \in G} a_g\ z_{gj} \ \le\ \sum_{t \in T} A_t\ y_{jt} \quad \forall j \in J \tag{R2}$$
 
 #### Capacidade de peso
 
-$$\sum_{i \in I} w_i\ x_{ij} \ \le\ \sum_{t \in T} W_t\ y_{jt} \quad \forall j \in J \tag{R3}$$
+$$\sum_{g \in G} w_g\ z_{gj} \ \le\ \sum_{t \in T} W_t\ y_{jt} \quad \forall j \in J \tag{R3}$$
 
 As duas capacidades (R2 e R3) valem **simultaneamente**: o caminhão só é viável
 se respeita área e peso. Na prática a área morde primeiro — a densidade mediana
-dos itens (797 kg/m²) supera a razão do caminhão de 16,5 m (671 kg/m²).
+dos pacotes (589 kg/m²) fica abaixo da razão do caminhão de 16,5 m (671 kg/m²),
+mas a cauda da distribuição passa por cima dela.
 
 #### Um tipo por caminhão
 
 $$\sum_{t \in T} y_{jt} \le 1 \quad \forall j \in J \tag{R4}$$
 
-#### Vínculo pacote-caminhão
+#### Vínculo grupo-caminhão
 
-$$x_{ij} \ \le\ \sum_{t \in T} y_{jt} \quad \forall i \in I,\ j \in J \tag{R5}$$
+$$z_{gj} \ \le\ n_g \sum_{t \in T} y_{jt} \quad \forall g \in G,\ j \in J \tag{R5}$$
 
-Caminhões fechados ficam vazios; por R4, o lado direito é binário.
+Caminhões fechados ficam vazios; por R4, o fator $\sum_t y_{jt}$ é binário.
+
+#### Ocupação do grupo
+
+$$u_{gj} \ \le\ z_{gj} \ \le\ n_g\, u_{gj} \quad \forall g \in G,\ j \in J \tag{R6}$$
+
+O par de desigualdades liga contagem e presença: $u_{gj} = 0$ obriga
+$z_{gj} = 0$ e, reciprocamente, qualquer carga positiva força $u_{gj} = 1$. É o
+que permite escrever as janelas em função da _presença_ do grupo, sem repetir a
+restrição para cada cópia.
 
 #### Partida após a disponibilidade
 
-$$\tau_j \ \ge\ av_i - M\ (1 - x_{ij}) \quad \forall i \in I,\ j \in J \tag{R6}$$
+$$\tau_j \ \ge\ av_g - M\ (1 - u_{gj}) \quad \forall g \in G,\ j \in J \tag{R7}$$
 
 #### Janela de consolidação
 
-$$\tau_j \ \le\ av_i + \Delta + M\ (1 - x_{ij}) \quad \forall i \in I,\ j \in J \tag{R7}$$
+$$\tau_j \ \le\ av_g + \Delta + M\ (1 - u_{gj}) \quad \forall g \in G,\ j \in J \tag{R8}$$
 
 #### Chegada dentro do prazo
 
-$$\tau_j \ \le\ dl_i - t_{\text{viagem}} + M\ (1 - x_{ij}) \quad \forall i \in I,\ j \in J \tag{R8}$$
+$$\tau_j \ \le\ dl_g - t_{\text{viagem}} + M\ (1 - u_{gj}) \quad \forall g \in G,\ j \in J \tag{R9}$$
 
-Juntas, R6–R8 caracterizam a viabilidade temporal do conjunto $S_j$ de pacotes
-do caminhão $j$:
+Juntas, R7–R9 caracterizam a viabilidade temporal do conjunto
+$S_j = \{g : u_{gj} = 1\}$ de grupos do caminhão $j$:
 
-$$\max_{i \in S_j} av_i \ \le\ \tau_j \ \le\
-\min\Big(\min_{i \in S_j} av_i + \Delta,\ \min_{i \in S_j} dl_i - t_{\text{viagem}}\Big),$$
+$$\max_{g \in S_j} av_g \ \le\ \tau_j \ \le\
+\min\Big(\min_{g \in S_j} av_g + \Delta,\ \min_{g \in S_j} dl_g - t_{\text{viagem}}\Big),$$
 
 ou seja, $S_j$ é temporalmente viável se, e somente se,
 
-$$\max_{i \in S_j} av_i - \min_{i \in S_j} av_i \le \Delta
+$$\max_{g \in S_j} av_g - \min_{g \in S_j} av_g \le \Delta
 \quad\text{e}\quad
-\max_{i \in S_j} av_i + t_{\text{viagem}} \le \min_{i \in S_j} dl_i.$$
+\max_{g \in S_j} av_g + t_{\text{viagem}} \le \min_{g \in S_j} dl_g.$$
 
-A escolha canônica é $\tau_j = \max_i av_i$: o caminhão parte assim que o último
+A escolha canônica é $\tau_j = \max_g av_g$: o caminhão parte assim que o último
 pacote fica pronto, o que maximiza a folga de prazo.
 
 <!-- **Auditoria.** A correspondência com o prazo é verificada duas vezes — por R8 no -->
@@ -261,75 +298,23 @@ pacote fica pronto, o que maximiza a folga de prazo.
 
 #### Quebra de simetria
 
-$$x_{ij} = 0 \quad \forall i \in I,\ j \in J:\ j > i \tag{R9}$$
-
-R9 não exclui soluções: dada qualquer solução viável, ordene os slots abertos
-pelo menor índice de pacote que contêm e renumere-os $1, 2, \dots$ nessa ordem.
-O $k$-ésimo slot aberto contém somente pacotes de índice $\ge k$, pois os $k-1$
-slots anteriores já consomem $k-1$ pacotes de índice menor; logo o slot $j$ só
-recebe pacotes $i \ge j$. A renumeração não altera custo nem viabilidade, de
-modo que toda solução tem uma representação que satisfaz R9 e o ótimo é
-preservado (a hipótese $m \le n$ garante que há rótulos suficientes). Restrições
-de ordenação desse tipo são a forma mais simples de quebra de simetria em
-formulações de empacotamento [@salem2020; @margot2010].
-
-A quebra propiciada por R9 é **parcial**: ela ordena os caminhões _abertos_ pelo
-menor índice de pacote que transportam, mas a ordenação é uma desigualdade
-($\min(S_j) \ge j$) e não uma igualdade: um caminhão cujo menor pacote tem
-índice maior que a posição que ocupa pode deslizar para uma posição posterior
-sem violar R9. Ela também não diz nada sobre a posição dos $m-o$ slots vazios,
-que permanecem permutáveis entre si. Cada plano de carregamento conserva, assim,
-várias representações de custo e de limitante idênticos — cópias que o
-_branch-and-bound_ não consegue distinguir nem podar, pois o limitante de uma
-não serve para refutar a outra [@margot2010; @ostrowski2011].
-
-#### Ordenação dos caminhões abertos
-
 $$\sum_{t \in T} y_{jt} \ \ge\ \sum_{t \in T} y_{j+1,t}
 \quad \forall j \in \{1, \dots, m-1\} \tag{R10}$$
 
 R10 exige que os caminhões abertos ocupem um prefixo de $J$; é a ordenação já
-empregada em formulações de empacotamento com caixas idênticas [@salem2020] e,
-como R9, não exclui soluções: dados os caminhões de uma solução viável,
-rotulando-os em ordem crescente do menor pacote que contêm, o $k$-ésimo recebe
-pacotes de índice $\ge k$ (satisfaz R9) e os $o$ abertos passam a ser os slots
-$1, \dots, o$ (satisfazem R10) — trocar um caminhão aberto por um slot vazio
-preserva viabilidade e custo. Combinadas, R9 e R10 fixam o **padrão de
-abertura** — os $m-o$ slots vazios são exatamente os últimos — mas não fixam a
-rotulagem dos caminhões abertos entre si. A simetria residual fica restrita aos
-caminhões _folgados_, cujo menor pacote tem índice maior que a posição que
-ocupam. Com $I = \{1, \dots, 6\}$, $m = 6$ e o plano $\{1,2,3\}$, $\{4\}$,
-$\{5\}$, $\{6\}$, os três últimos ocupam os slots $2$–$4$ em qualquer das $3!$
-ordens, todas de custo idêntico. R10 não altera o ótimo — é a mesma frota, com o
-mesmo custo — mas reduz o esforço de prova, e é por isso que a incorporamos ao
-modelo.
+empregada em formulações de empacotamento com caixas idênticas [@salem2020] e
+**não exclui soluções**: dada qualquer solução viável com $o$ caminhões abertos,
+renumere-os $1, \dots, o$ — trocar um caminhão aberto por um slot vazio preserva
+viabilidade e custo —, e o ótimo é preservado. A restrição colapsa as $m!$
+ordenações de slot em uma única configuração de abertura, os $m-o$ slots vazios
+sendo exatamente os últimos.
 
-#### Simetria entre pacotes idênticos
-
-Com R9–R10 o conjunto de slots abertos é canônico. Além da ordem residual dos
-caminhões _folgados_, resta a simetria entre pacotes indistinguíveis — mesmos
-valores de área, peso, disponibilidade e prazo. Ela não é um detalhe nos dados
-reais: em `order_large.csv`, 4.631 dos 4.635 pacotes pertencem a rotas com
-repetição, e há rota com 276 pacotes e apenas 4 tipos distintos. A quebra
-adotada ordena cada grupo de idênticos pela posição que ocupam,
-
-$$\sum_{j \in J} j\,x_{ij} \ \le\ \sum_{j \in J} j\,x_{i'j} \tag{R11}$$
-
-para todo par consecutivo $i < i'$ de pacotes idênticos. Verificamos por
-enumeração exaustiva, em 70 instâncias minúsculas com repetições, que R11 não
-exclui solução ótima (desvio nulo contra o ótimo irrestrito), e medimos o ganho:
-em instâncias sintéticas com grupos de 4 a 5 cópias os nós caem de 38 para 9 e
-de 15.992 para 808, sem alterar o ótimo, e R11 é vacuamente inócua quando não há
-repetição (335 nós com e sem ela). Em subamostras reais de 30 a 40 pacotes o
-quadro se repete em parte — os nós caem de 65 para 11 (`City_37`) e de 231 para
-19 (`City_58`) —, mas em outras não há mudança ou há piora (13 para 26 nós em
-`City_18`, $n = 40$), e o tempo **não** acompanha em todos os casos, porque as
-linhas extras pesam no pré-processamento de modelos pequenos. Esses custos não
-justificam abrir mão do corte: R11 **integra o modelo** e é aplicada em todas as
-instâncias, inclusive nas pequenas. Uma instância que resolve no nó raiz não tem
-tempo de prova a economizar, e nas maiores — onde o tempo de fato importa — o
-corte de nós é o que domina. Demonstração em
-`scripts/package_symmetry_benchmark.py`.
+O que R10 **não** faz é fixar qual caminhão aberto é qual: com $o$ caminhões
+abertos, suas $o!$ permutações continuam produzindo soluções distintas de mesmo
+custo, que o _branch-and-bound_ não consegue distinguir [@margot2010;
+@ostrowski2011]. A simetria entre **pacotes idênticos**, por outro lado, já não
+existe: como não há um binário por cópia, mas apenas a contagem $z_{gj}$, não há
+identidades para permutar.
 
 ### Sumário do modelo
 
@@ -337,9 +322,45 @@ De forma compacta, o modelo de otimização inteira mista é:
 
 $$
 \min \sum_{j \in J}\sum_{t \in T} C_t\ y_{jt}
-\quad \text{s.a.} \quad \text{R1–R11,}
-\quad x_{ij},\  y_{jt} \in \lbrace0,1\rbrace,\ \tau_j \ge 0,
+\quad \text{s.a.} \quad \text{R1–R10,}
 $$
 
-com $(I, T, J)$, $(a_i, w_i)$, $(A_t, W_t, C_t)$, $(av_i, dl_i)$,
-$t_{\text{viagem}}$ e $\Delta$ conforme declarado nas subseções anteriores.
+com $z_{gj} \in \lbrace0, \dots, n_g\rbrace$ inteiro, $u_{gj}, y_{jt} \in
+\lbrace0,1\rbrace$ e $\tau_j \ge 0$, e com $(G, T, J)$, $(n_g, a_g, w_g)$,
+$(A_t, W_t, C_t)$, $(av_g, dl_g)$, $t_{\text{viagem}}$ e $\Delta$ conforme
+declarado nas subseções anteriores.
+
+### Complexidade computacional
+
+#### Tamanho do modelo
+
+Com $m \le n$ slots, $G$ grupos e $T$ tipos há $2Gm$ variáveis por grupo (uma
+contagem inteira e um binário de ocupação), $mT$ binárias de tipo e $m$
+contínuas; R1–R10 somam $O(Gm)$ linhas e $O(GmT)$ coeficientes não nulos. Como
+$G \le n$, a formulação nunca é maior que a versão item a item, e é estritamente
+menor assim que houver repetição.
+
+#### Esforço de resolução
+
+A relaxação linear é polinomial no tamanho do modelo; o _branch-and-bound_ não
+é. Cada folha da árvore é uma distribuição de contagens entre os slots, e o
+número de distribuições é
+
+$$\prod_{g \in G} \binom{n_g + m - 1}{m - 1},$$
+
+que coincide com $m^n$ quando todos os $n_g = 1$ e cai rapidamente quando há
+repetição. O problema em si continua NP-difícil — a partição ótima em pacotes
+admite solução exata por programação dinâmica sobre subconjuntos em
+$O(n\,3^n) = 2^{O(n)}$ —, de modo que o ganho do MILP não é assintótico, e sim
+prático: limitante da relaxação, cortes e presolve podam a árvore
+[@martello1990].
+
+#### Nestas instâncias
+
+As 111 instâncias vão de 1 a 198 pacotes ($G$ de 1 a 11) e o teto de slots de
+pré-processamento vai de 1 a 26. Na maior delas (`City_58` em 6 de abril, 198
+pacotes em 11 grupos, $m = 16$), a formulação agregada tem 432 variáveis e 1.130
+linhas; a versão item a item, **com o mesmo $m$**, teria 3.248 variáveis e 12.933
+linhas — sete e onze vezes mais. Sem o teto de slots ($m = n$), a versão item a
+item chegaria a 40.194 variáveis e 157.805 linhas. No conjunto, os 4.635 pacotes
+viram 239 grupos (instância $\times$ classe).

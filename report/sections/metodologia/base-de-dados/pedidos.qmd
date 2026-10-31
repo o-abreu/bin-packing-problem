@@ -1,0 +1,180 @@
+### Pedidos
+
+Os 4.635 pacotes chegam em **365 pedidos** (`Order_ID`), de tamanhos muito
+desiguais: de 1 a 39 pacotes, com mediana de 10 (p10 de 2, p90 de 29) e peso
+mediano de 16,2 t. Um pedido é, ainda, **homogêneo**: em 86,6% deles há um único
+tipo (área, peso), em 11,8% dois, em 1,4% três e em 0,3% quatro. A
+@fig-pedidos-volume resume as duas coisas — o volume por pedido e a diversidade
+de tipos dentro dele.
+
+```{python}
+#| echo: false
+#| warning: false
+
+g = items.groupby("Order_ID")
+pedidos = pd.DataFrame({
+    "pacotes": g.size(),
+    "peso_t": g["weight_kg"].sum() / 1e3,
+    "tipos": g.apply(lambda d: d.drop_duplicates(["Area", "Weight"]).shape[0]),
+    "av": pd.to_datetime(g["Available_Time"].first()).dt.date,
+    "dl": pd.to_datetime(g["Deadline"].first()).dt.date,
+})
+```
+
+```{python}
+#| echo: false
+#| warning: false
+#| label: fig-pedidos-volume
+#| fig-width: 3.3
+#| fig-height: 1.5
+#| fig-cap: 'Volume e diversidade dos 365 pedidos de `order_large.csv`. Esquerda: número de pacotes por pedido (mediana 10; linha vertical). Direita: percentual de pedidos segundo o número de tipos (área, peso) distintos que contêm — 86,6% são homogêneos.'
+
+fig, axes = plt.subplots(1, 2)
+ax = axes[0]
+ax.hist(pedidos["pacotes"], bins=np.arange(0.5, 40.5, 1), color="0.78",
+        edgecolor="black", linewidth=0.3)
+ax.axvline(pedidos["pacotes"].median(), color="black", linewidth=1.0)
+ax.set_xlabel("pacotes por pedido")
+ax.set_ylabel("pedidos")
+
+ax = axes[1]
+contagem = pedidos["tipos"].value_counts().sort_index()
+ax.bar(contagem.index, 100 * contagem / len(pedidos), color="0.78",
+       edgecolor="black", linewidth=0.4, width=0.7)
+for k, v in contagem.items():
+    ax.annotate(f"{100 * v / len(pedidos):.1f}".replace(".", ","),
+                xy=(k, 100 * v / len(pedidos)), xytext=(0, 2),
+                textcoords="offset points", ha="center", fontsize=5)
+ax.set_xlabel("tipos distintos no pedido")
+ax.set_ylabel("% dos pedidos")
+ax.set_xticks(contagem.index)
+plt.tight_layout()
+```
+
+O tamanho desigual dos pedidos produz uma concentração moderada: o índice de
+Gini dos pacotes por pedido é de **0,42** — os 10% maiores pedidos carregam 28%
+dos pacotes, e a metade menor responde por 22% —, como mostra a
+@fig-pedidos-lorenz. Nada parecido com uma distribuição de cauda pesada: há
+pedidos grandes, mas não há alguns poucos pedidos dominando o conjunto.
+
+```{python}
+#| echo: false
+#| warning: false
+#| label: fig-pedidos-lorenz
+#| fig-width: 3.3
+#| fig-height: 2.2
+#| fig-cap: 'Curva de Lorenz dos tamanhos de pedido (pacotes por `Order_ID`). A diagonal representa igualdade perfeita; a área entre a curva e a diagonal é o índice de Gini (0,42). Os 10% maiores pedidos concentram 28% dos pacotes.'
+
+pacotes_ord = np.sort(pedidos["pacotes"].to_numpy())
+frac = np.concatenate([[0.0], np.arange(1, len(pacotes_ord) + 1) / len(pacotes_ord)])
+acum = np.concatenate([[0.0], np.cumsum(pacotes_ord) / pacotes_ord.sum()])
+gini = 1.0 - 2.0 * np.trapezoid(acum, frac)
+
+fig, ax = plt.subplots()
+ax.plot([0, 1], [0, 1], linestyle="--", color="black", linewidth=0.6)
+ax.plot(frac, acum, color="black", linewidth=1.0)
+ax.fill_between(frac, acum, frac, color="0.85", linewidth=0)
+ax.text(0.52, 0.22, f"Gini = {gini:.2f}".replace(".", ","), fontsize=6)
+ax.set_xlabel("fração acumulada dos pedidos (do menor ao maior)")
+ax.set_ylabel("fração acumulada dos pacotes")
+ax.set_aspect("equal")
+plt.tight_layout()
+```
+
+No tempo, a oferta é concentrada e a demanda é espalhada. Todos os 4.635 pacotes
+ficam disponíveis em **três dias** (5 a 7 de abril de 2022), em lotes
+semelhantes — 1.495, 1.399 e 1.741 pacotes, cerca de 1,7 mil t por dia —, enquanto
+os prazos se distribuem por **oito dias** (6 a 13 de abril), com pico em 9 de
+abril (106 pedidos). A janela entre disponibilidade e prazo tem mediana de 2,5
+dias e máximo de 6. A @fig-pedidos-tempo compara as duas distribuições.
+
+```{python}
+#| echo: false
+#| warning: false
+#| label: fig-pedidos-tempo
+#| fig-width: 3.3
+#| fig-height: 1.5
+#| fig-cap: 'Distribuição temporal dos pedidos de `order_large.csv`. Esquerda: pacotes liberados por dia de `Available_Time` (o número sobre cada barra é o de pedidos daquele dia). Direita: pedidos por dia de `Deadline`. A liberação ocupa três dias e os prazos, oito.'
+
+liberacao = pedidos.groupby("av").agg(pedidos=("pacotes", "size"),
+                                      pacotes=("pacotes", "sum"))
+prazo = pedidos.groupby("dl").size()
+
+fig, axes = plt.subplots(1, 2)
+ax = axes[0]
+ax.bar(range(len(liberacao)), liberacao["pacotes"], color="0.78",
+       edgecolor="black", linewidth=0.4, width=0.7)
+ax.set_xticks(range(len(liberacao)))
+ax.set_xticklabels([d.strftime("%d/%m") for d in liberacao.index], rotation=45)
+ax.set_ylabel("pacotes liberados")
+for k, (n_pedidos, n_pacotes) in enumerate(liberacao.itertuples(index=False)):
+    ax.annotate(str(n_pedidos), xy=(k, n_pacotes), xytext=(0, 2),
+                textcoords="offset points", ha="center", fontsize=5)
+
+ax = axes[1]
+ax.bar(range(len(prazo)), prazo.values, color="0.78", edgecolor="black",
+       linewidth=0.4, width=0.7)
+ax.set_xticks(range(len(prazo)))
+ax.set_xticklabels([d.strftime("%d") for d in prazo.index], rotation=45)
+ax.set_ylabel("pedidos com prazo")
+plt.tight_layout()
+```
+
+A concentração também é espacial — mas **heterogênea**: dos 61 destinos, 28
+recebem carga em um único dia, 16 em dois e 17 nos três, e a mediana do dia
+dominante é de 89,5% da carga do destino. O padrão, porém, se inverte com o
+volume: entre os dez maiores, nove usam os três dias (a carga de `City_58`
+reparte-se em 31%, 42% e 27%), enquanto os destinos pequenos tendem a concentrar
+tudo num dia só.
+
+Esse resultado tem consequência direta para o modelo: como os dias consecutivos
+de liberação distam **24 h**, muito acima de $\Delta = 4$ h, um caminhão não
+consegue misturar pacotes liberados em dias diferentes. O recorte rota × dia não
+fragmenta a instância artificialmente — ele reflete a própria janela de
+consolidação.
+
+A janela entre disponibilidade e prazo mede de 1 a 144 h (mediana de 60 h), mas
+o trânsito consome parte dela: descontando $t_{\text{viagem}} = d/v$, a folga
+mediana cai para **30 h** e **73 dos 4.635 itens** ficam com menos de 4 h. Nesses
+casos o instante de partida é praticamente forçado, e a única liberdade que resta
+ao modelo é o emparelhamento — é aí que R6–R8 mordem. A @fig-pedidos-janela
+mostra as duas distribuições.
+
+```{python}
+#| echo: false
+#| warning: false
+#| label: fig-pedidos-janela
+#| fig-width: 3.3
+#| fig-height: 2.7
+#| fig-cap: 'Tempo disponível por item, em painéis empilhados e na mesma escala (0 a 144 h). Acima: janela total entre `Available_Time` e `Deadline` (1 a 144 h, mediana 60 h). Abaixo: folga que sobra depois de descontar o tempo de viagem na rota (mediana 30 h; 73 itens com menos de 4 h) — a distribuição desloca-se para a esquerda e deixa de usar o topo da escala.'
+
+km = dist.loc[dist["Source"] == "City_61"].set_index("Destination")["Distance(M)"] / 1e3
+transito = items["Destination"].map(km) / 40.0
+janela_h = (pd.to_datetime(items["Deadline"])
+            - pd.to_datetime(items["Available_Time"])).dt.total_seconds() / 3600
+folga_h = janela_h - transito
+
+fig, axes = plt.subplots(2, 1)
+valores, contagens = np.unique(janela_h, return_counts=True)
+axes[0].bar(valores, contagens, width=6, color="0.78", edgecolor="black",
+            linewidth=0.4)
+axes[0].set_xlabel("janela disponível (h)")
+axes[0].set_ylabel("itens")
+axes[0].set_xticks(np.arange(0, 145, 24))
+axes[0].set_xlim(0, 144)
+axes[1].hist(folga_h, bins=np.arange(0, 147, 3), color="0.78",
+             edgecolor="black", linewidth=0.3)
+axes[1].set_xlabel("folga após o trânsito (h)")
+axes[1].set_ylabel("itens")
+axes[1].set_xticks(np.arange(0, 145, 24))
+axes[1].set_xlim(0, 144)
+plt.tight_layout()
+```
+
+Dois fatos fecham a leitura dos pedidos como unidade de análise. Primeiro,
+`Available_Time` e `Deadline` são **constantes dentro de cada pedido** nos 365
+casos: o pedido é a menor unidade temporal do conjunto, e não o pacote. Segundo,
+como um pedido é quase sempre homogêneo, a diversidade de tipos que aparece numa
+rota vem da **mistura de pedidos**, não da composição interna de cada um. É por
+isso que o recorte experimental natural é rota × dia de disponibilidade — o que
+devolve 111 instâncias não vazias, tratadas na próxima subseção.

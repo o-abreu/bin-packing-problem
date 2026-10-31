@@ -44,18 +44,33 @@ def _identical_pairs(a, w, av, dl):
 
 
 def solve(a, w, av, dl, dist_km, variant, m=None, time_limit=120.0, pkg_order=False,
-          threads=None, gap=None):
+          threads=None, gap=None, order=None):
     """Monta e resolve o MILP; devolve status, objetivo, nós e tempo.
 
     `pkg_order=True` acrescenta R11 (ordenação lexicográfica entre pacotes
     idênticos), que só faz sentido se houver pacotes repetidos. `threads` fixa o
     número de threads do HiGHS (1 por processo é o que escala ao paralelizar
-    rotas); `gap` fixa o gap relativo de aceitação.
+    rotas); `gap` fixa o gap relativo de aceitação. `order` reetiqueta os pacotes
+    antes de montar o modelo (R9 e R11 dependem do índice): "area", "peso",
+    "tempo" ou "tempo_area_peso".
     """
     n, T = len(a), len(TRUCKS)
     m = m or n
     a = np.asarray(a, float) * SCALE
     w = np.asarray(w, float) * SCALE
+    av = np.asarray(av, float)
+    dl = np.asarray(dl, float)
+    if order == "area":
+        perm = np.lexsort((-w, -a))            # área desc, empate pelo peso desc
+    elif order == "peso":
+        perm = np.lexsort((-a, -w))            # peso desc, empate pela área desc
+    elif order == "tempo":
+        perm = np.lexsort((dl, av))            # disponibilidade asc, prazo asc
+    elif order == "tempo_area_peso":
+        perm = np.lexsort((-w, -a, av))        # tempo asc, área desc, peso desc
+    else:
+        perm = np.arange(n)
+    a, w, av, dl = a[perm], w[perm], av[perm], dl[perm]
     A = np.array([t[0] for t in TRUCKS])
     W = np.array([t[1] for t in TRUCKS])
     C = np.array([t[2] * dist_km for t in TRUCKS])

@@ -1,0 +1,155 @@
+### Redução do modelo
+
+O terceiro bloco aplica os cortes que preservam o ótimo:
+
+- **Filtro de tipos.** Um tipo só entra na instância se comporta ao menos um
+  pacote ($A_t \ge \max_g a_g$ e $W_t \ge \max_g w_g$) e não é dominado por
+  outro tipo disponível na mesma instância — com custo por viagem $C_t = c_t d$.
+- **Teto de slots.** $m$ não precisa ser $n$: como todo caminhão custa ao menos
+  $c_{\min} d$, uma solução factível de custo $\mathrm{UB}$ limita
+  $m \le \lfloor \mathrm{UB}/(c_{\min}d)\rfloor$. O $\mathrm{UB}$ vem de uma
+  construção gulosa (primeira adaptação em ordem decrescente de área,
+  respeitando área, peso e janela). Cada caminhão dessa construção paga o tipo
+  mais barato que o comporta, de modo que
+  $\mathrm{UB} = \sum_b \min\{c_t : A_t \ge a_b,\ W_t \ge w_b\}\, d$, somado
+  sobre os caminhões $b$; o número de caminhões usados fica registrado como
+  diagnóstico, nunca como teto — usá-lo seria **inválido**, porque o ótimo pode
+  usar mais caminhões menores e sair mais barato, enquanto o teto de custo é
+  seguro, embora frouxo.
+- **Fechamento por inspeção.** Quando a carga inteira cabe num caminhão e a
+  janela permite, o ótimo é o custo desse caminhão e não há MILP a resolver.
+
+O bloco grava `instances.csv` (uma linha por instância, com os parâmetros do
+modelo), `groups.csv` (uma linha por grupo, com $n_g$) e um `meta.json` com o
+tempo de construção.
+
+```{python}
+#| echo: false
+#| label: pp-reducao
+if not do_cache:
+    registros = []
+    for ident, d in dados_inst.items():
+        g, a, w, av, dl = d["grupos"], d["a"], d["w"], d["av"], d["dl"]
+        ga = g.index.get_level_values("a").to_numpy()
+        gw = g.index.get_level_values("w").to_numpy()
+        dist_km, t_viagem = d["dist_km"], d["t_viagem"]
+
+        # tipos viáveis e não dominados nesta instância
+        cand = [t for t in range(len(nomes_tipo))
+                if capacidade_area[t] >= ga.max() - 1e-9
+                and capacidade_peso[t] >= gw.max() - 1e-9]
+        dominados = {t for t in cand for k in cand
+                     if k != t and capacidade_area[k] >= capacidade_area[t]
+                     and capacidade_peso[k] >= capacidade_peso[t]
+                     and custo_km[k] <= custo_km[t]}
+        tipos = [t for t in cand if t not in dominados] or cand
+
+        # UB de custo: primeira adaptação decrescente em área (só para limitar m)
+        maior_area = max(capacidade_area[t] for t in tipos)
+        maior_peso = max(capacidade_peso[t] for t in tipos)
+        caixas = []
+        for i in np.lexsort((-w, -a)):
+            for b in caixas:
+                if (b["a"] + a[i] <= maior_area + 1e-9
+                        and b["w"] + w[i] <= maior_peso + 1e-9
+                        and max(b["avm"], av[i]) - min(b["avl"], av[i]) <= DELTA_H + 1e-9
+                        and max(b["avm"], av[i]) + t_viagem <= min(b["dlm"], dl[i]) + 1e-9):
+                    b["a"] += a[i]
+                    b["w"] += w[i]
+                    b["avm"] = max(b["avm"], av[i])
+                    b["avl"] = min(b["avl"], av[i])
+                    b["dlm"] = min(b["dlm"], dl[i])
+                    break
+            else:
+                caixas.append(dict(a=a[i], w=w[i], avm=av[i], avl=av[i], dlm=dl[i]))
+        ub = 0.0
+        for b in caixas:
+            cabem = [t for t in tipos if capacidade_area[t] >= b["a"] - 1e-9
+                     and capacidade_peso[t] >= b["w"] - 1e-9]
+            ub += custo_km[min(cabem, key=lambda t: custo_km[t])] * dist_km
+
+        c_min = custo_km[min(tipos, key=lambda t: custo_km[t])]
+        m = max(1, int(min(d["n"], np.floor(ub / (c_min * dist_km) + 1e-9))))
+
+        # fechamento por inspeção: um único caminhão resolve a instância
+        cabem_um = [t for t in tipos if capacidade_area[t] >= a.sum() - 1e-9
+                    and capacidade_peso[t] >= w.sum() - 1e-9]
+        fecha = (bool(cabem_um)
+                 and av.max() - av.min() <= DELTA_H + 1e-9
+                 and av.max() + t_viagem <= dl.min() + 1e-9)
+
+        registros.append(dict(
+            instance=ident, destination=d["destino"], day=d["dia"].isoformat(),
+            n_packages=d["n"], n_groups=len(g),
+            area_total=float(a.sum()), weight_total=float(w.sum()),
+            dist_km=dist_km, m_slots=m, n_bins_ub=len(caixas), ub_cost=float(ub),
+            lb_area=int(np.ceil(a.sum() / maior_area)),
+            infeasible_items=d["inviaveis"],
+            types_allowed="|".join(nomes_tipo[t] for t in tipos),
+            closed=bool(fecha),
+            closed_cost=float(custo_km[min(cabem_um, key=lambda t: custo_km[t])] * dist_km)
+            if fecha else np.nan))
+
+    instancias = pd.DataFrame(registros)
+    grupos_df = pd.DataFrame(grupos)
+    segundos = time.perf_counter() - t_inicio
+    OUT.mkdir(parents=True, exist_ok=True)
+    instancias.to_csv(caminho_inst, index=False)
+    grupos_df.to_csv(caminho_grupos, index=False)
+    (OUT / "meta.json").write_text(json.dumps(dict(
+        elapsed_s=segundos, instances=len(instancias), groups=len(grupos_df),
+        packages=int(instancias.n_packages.sum()),
+        closed=int(instancias.closed.sum())), indent=2))
+else:
+    instancias = pd.read_csv(caminho_inst)
+    grupos_df = pd.read_csv(caminho_grupos)
+    segundos = json.loads((OUT / "meta.json").read_text())["elapsed_s"]
+
+maior = instancias.loc[instancias["n_packages"].idxmax()]
+resumo.update(
+    fechadas=f"{int(instancias.closed.sum())}",
+    m_total=f"{int(instancias.m_slots.sum())}",
+    m_maximo=f"{int(instancias.m_slots.max())}",
+    maior_id=maior["instance"],
+    maior_n=f"{int(maior['n_packages'])}",
+    maior_G=f"{int(maior['n_groups'])}",
+    maior_m=f"{int(maior['m_slots'])}",
+    maior_bins=f"{int(maior['n_bins_ub'])}",
+    tempo=f"{segundos:.2f}".replace(".", ","),
+    tempo_agora=f"{time.perf_counter() - t_inicio:.2f}".replace(".", ","),
+    origem="cache" if do_cache else "construção",
+)
+```
+
+Os números que o bloco produziu: `{python} resumo["fechadas"]` das
+`{python} resumo["instancias"]` instâncias fecham por inspeção, e o teto de
+custo é válido mas frouxo — na maior instância (`{python} resumo["maior_id"]`,
+`{python} resumo["maior_n"]` pacotes), a construção heurística usa
+`{python} resumo["maior_bins"]` caminhões e o teto permite
+`{python} resumo["maior_m"]` slots, num total de `{python} resumo["m_total"]`
+slots nas 111 instâncias. Nenhuma instância passa de
+`{python} resumo["maior_G"]` grupos.
+
+
+
+\begin{table}[!ht] \centering
+\begin{tabular}{@{}p{3.0cm}p{5.4cm}@{}}
+\toprule
+Corte & Efeito medido \\
+\midrule
+Teto de slots pelo custo & maior instância (\texttt{City\_58}, 198 pacotes): 10
+caminhões na construção heurística, 16 slots; 465 slots para 111 instâncias \\
+Filtro de tipos & nenhum par domina na frota global; vale por instância \\
+Fechamento por inspeção & 44 das 111 instâncias resolvidas sem solver \\
+\bottomrule
+\end{tabular}
+\caption{Cortes de pré-processamento e efeito medido. O primeiro é contado em
+slots; os dois últimos, em instâncias afetadas. Números produzidos pelos blocos
+de código desta seção.} \label{tab-preprocessamento}
+\end{table}
+
+Não há etapa de **rotulagem** de pacotes. Na versão item a item do modelo, a
+ordem dos índices importava — restrições de quebra de simetria davam ao pacote
+$i$ apenas os slots $1..i$ —, e testamos cinco políticas de ordenação. Com o
+agrupamento não existe índice de pacote a escolher: o grupo carrega apenas a
+multiplicidade $n_g$, e a pergunta desaparece.

@@ -13,22 +13,39 @@ caminhos de código, em inglês.
 
 ## 1. Modelo em teste
 
-VSBPP fixo-charge bidimensional, formulação R1–R10 de
-`report/sections/metodologia/modelagem-matematica.qmd`:
+VSBPP fixo-charge bidimensional, **formulação agregada** R1–R10 de
+`report/sections/metodologia/modelagem-matematica.qmd`. A instância é descrita
+por grupos $g$ de pacotes idênticos (mesma área, peso, disponibilidade e prazo),
+com multiplicidade $n_g$; $z_{gj} \in \{0,\dots,n_g\}$ conta quantos pacotes do
+grupo vão no caminhão $j$ e $u_{gj}$ indica se há algum.
 
 | id | restrição |
 | --- | --- |
-| R1 | atribuição completa: $\sum_j x_{ij} = 1$ |
-| R2 | capacidade de área: $\sum_i a_i x_{ij} \le \sum_t A_t y_{jt}$ |
-| R3 | capacidade de peso: $\sum_i w_i x_{ij} \le \sum_t W_t y_{jt}$ |
+| R1 | atribuição: $\sum_j z_{gj} = n_g$ |
+| R2 | capacidade de área: $\sum_g a_g z_{gj} \le \sum_t A_t y_{jt}$ |
+| R3 | capacidade de peso: $\sum_g w_g z_{gj} \le \sum_t W_t y_{jt}$ |
 | R4 | um tipo por caminhão: $\sum_t y_{jt} \le 1$ |
-| R5 | vínculo: $x_{ij} \le \sum_t y_{jt}$ |
-| R6 | partida após disponibilidade: $\tau_j \ge av_i - M(1-x_{ij})$ |
-| R7 | janela de consolidação: $\tau_j \le av_i + \Delta + M(1-x_{ij})$ **(sinal corrigido)** |
-| R8 | chegada no prazo: $\tau_j \le dl_i - t_{\text{viagem}} + M(1-x_{ij})$ |
-| R9 | quebra: $x_{ij} = 0$ para $j > i$ |
+| R5 | vínculo: $z_{gj} \le n_g \sum_t y_{jt}$ |
+| R6 | ocupação: $u_{gj} \le z_{gj} \le n_g u_{gj}$ |
+| R7 | partida após disponibilidade: $\tau_j \ge av_g - M(1-u_{gj})$ |
+| R8 | janela de consolidação: $\tau_j \le av_g + \Delta + M(1-u_{gj})$ |
+| R9 | chegada no prazo: $\tau_j \le dl_g - t_{\text{viagem}} + M(1-u_{gj})$ |
 | R10 | caminhões abertos ocupam prefixo: $\sum_t y_{jt} \ge \sum_t y_{j+1,t}$ |
-| R11 | ordenação de pacotes idênticos: $\sum_j j\,x_{ij} \le \sum_j j\,x_{i'j}$ (ver §4) |
+
+**Mudança de formulação (31 out. 2026).** Até então o modelo era item a item
+(R1–R11, com $x_{ij}$ binário, R9 de ordenação e R11 de simetria entre idênticos).
+A agregação substitui R9/R11: não há índice de pacote para ordenar, e a simetria
+entre idênticos desaparece por construção. Comparação nas 4 rotas testadas
+(`scripts/aggregated_model.py`, HiGHS, 60 s):
+
+| rota | item a item | agregado |
+| --- | --- | --- |
+| `City_54` (n=59, G=3) | 120 s, TL, 44 231 nós | **7,1 s**, ótimo 193 101,75 |
+| `City_48` (n=37, G=9) | 120 s, TL, 55 840 nós | **5,8 s**, ótimo 49 893,66 |
+| `City_10` (n=53, G=3) | 13,9 s, 11 nós | **0,4 s**, 4 nós |
+| `City_14` (n=35, G=3) | 10,7 s, 793 nós | **1,6 s**, 919 nós |
+
+Objetivos idênticos nas duas formulações (validação cruzada).
 
 > Nota histórica: a R7 estava impressa com $-M(1-x_{ij})$ e tornava **infactível**
 > toda instância em que um caminhão não contém todos os pacotes. Corrigida para
@@ -188,10 +205,10 @@ caem para 18 156 e 2 024 nós, mas ainda estouram o limite.
 
 | ideia | efeito medido |
 | --- | --- |
-| **P1. Agregar pacotes idênticos** (variáveis de contagem $z_{gj}$ + binário $w_{gj}$) | $x_{ij}$: 795 137 → **3 329** em todas as rotas (239×); `City_54`: 59 pacotes → 3 grupos; `City_58`: 468 → 20 |
+| **P1. Agregar pacotes idênticos** (agora parte do modelo, R1–R10) | 4 635 pacotes → **239 grupos** (instância × classe); maior instância: 198 pacotes em **11 grupos** |
 | **P2. Teto de slots** $m=\min\{n,\lfloor \mathrm{UB}/(c_{\min} d)\rfloor\}$ | `City_48`: $n^2=1\,369$ → 72; `City_17`: 46 656 → 30 |
 | **P3. Filtro de tipos por rota** | nenhum par domina na frota global; checar por rota |
-| **P4. Fechamento por inspeção** | **9 de 61** rotas resolvidas sem MILP (carga cabe em 7,6 m + janela ok) |
+| **P4. Fechamento por inspeção** | **44 de 111 instâncias** (rota × dia) resolvidas sem MILP |
 | **P6. Triagem de inviabilidade** | 0 itens inviáveis por janela/peso/área (resultado a reportar) |
 
 **Ressalva importante (P2):** usar o *número de caminhões da FFD* como teto é
@@ -202,6 +219,33 @@ $c_{\min}d$, logo $m \le \lfloor \mathrm{UB}/(c_{\min}d) \rfloor$.
 Outros fatos úteis: janela de disponibilidade mediana de 24 h por rota (máx.
 56 h) contra $\Delta = 4$ h ⇒ consolidação ampla é impossível; LB de frota por
 área soma 270 caminhões e por peso 226.
+
+### 6.1 Rotulagem dos pacotes (ordenação) — histórica, só no modelo item a item
+
+> **Obsoleto desde 31/10/2026:** com a formulação agregada não há índice de
+> pacote, e a pergunta desaparece. Registro mantido porque foi medido.
+
+R9 e R11 dependiam do índice do pacote, então reetiquetar era uma decisão de
+modelagem. Testadas 5 políticas (`solve(..., order=...)` em
+`scripts/symmetry_benchmark.py`), R1–R11, HiGHS, 1 thread, limite 40 s:
+
+| política | nós, sintéticas $n=20$ (3 sementes) | nós, sintéticas $n=12$ |
+| --- | --- | --- |
+| original | 335 / 25 / 70 | 1 / 1 / 1 |
+| área desc | **133 / 17 / 20** | 13 / 0 / 1 |
+| peso desc | 276 / 13 / 88 | 17 / 0 / 1 |
+| tempo (cronológica) | 1 433 / 683 / 1 711 | 55 / 10 / 0 |
+| tempo → área → peso | 1 433 / 683 / 1 711 | 55 / 10 / 0 |
+
+- **Ordem cronológica piora** (até 5× mais nós): a cronologia não guarda relação
+  com o tamanho e enfraquece a poda de R9.
+- **Área desc reduz nós** consistentemente, mas não o tempo (o presolve domina
+  nas instâncias pequenas).
+- Em rotas reais o efeito é ruído: `City_14` cronológica 8,6 s vs 10,1 s;
+  `City_10` área 11 → 1 nó; `City_5` área estourou 30 s enquanto a original
+  fechava em 21 s.
+- Conclusão: manter a indexação original; área desc como ajuste opcional.
+  Não confundir com a ordenação da FFD, que é **construtiva**, não rotulagem.
 
 ---
 

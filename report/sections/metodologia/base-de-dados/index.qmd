@@ -1,0 +1,82 @@
+## Base de dados
+
+### Fonte e esquema
+
+O conjunto é distribuído no Kaggle sob licença MIT [@routeopt2026] e é espelho
+dos dados de amostra do acelerador da Microsoft [@routeopt2022]; os arquivos
+usados estão versionados em `data/raw/`:
+
+- `order_large.csv` — **4.635 pacotes** em 365 pedidos, distribuídos em **61
+  pares origem–destino**; é a instância principal;
+- `order_small.csv` — 10 pacotes em 5 pedidos e 2 pares origem–destino, usado
+  como caso de teste mínimo;
+- `distance.csv` — matriz de distâncias entre cidades, **em metros** (apesar do
+  nome da coluna, `Distance(M)`; é o que converte custo por km em custo por
+  viagem);
+- `trucks.csv` — a frota, transcrita de `src/core/structure.py` do repositório
+  de origem; o README do projeto lista uma tabela mais antiga e inconsistente, e
+  o código é a fonte autoritativa.
+
+As colunas `Area` e `Weight` vêm escaladas por $10^4$; todos os valores citados
+neste relatório já estão convertidos para m² e kg. Das 20 colunas disponíveis,
+`Available_Time` e `Deadline` alimentam as restrições temporais do modelo e
+`Danger_Type` não é utilizada.
+
+## Análise estatística exploratória
+
+```{python}
+#| include: false
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+
+RAW = Path("../data/raw")  # o cwd de um chunk é o diretório do documento
+
+items = pd.read_csv(RAW / "order_large.csv")
+items["area_m2"] = items["Area"] / 1e4  # as colunas vêm escaladas por 10^4
+items["weight_kg"] = items["Weight"] / 1e4
+items["dens"] = items["weight_kg"] / items["area_m2"]
+
+trucks = pd.read_csv(RAW / "trucks.csv", comment="#")
+trucks["ratio"] = trucks["weight_capacity_kg"] / trucks["area_capacity_m2"]
+
+dens_med = items["dens"].median()
+dens_agg = items["weight_kg"].sum() / items["area_m2"].sum()
+
+# rede de rotas: matriz completa de distâncias (km) e posições em 2D
+dist = pd.read_csv(RAW / "distance.csv")
+cities = sorted(set(dist["Source"]) | set(dist["Destination"]))
+city_idx = {c: i for i, c in enumerate(cities)}
+D = np.zeros((len(cities), len(cities)))
+D[dist["Source"].map(city_idx), dist["Destination"].map(city_idx)] = (
+    dist["Distance(M)"] / 1e3
+)
+D = np.maximum(D, D.T)  # a matriz vem simétrica; o máximo protege contra ausências
+
+# escalonamento multidimensional clássico: as posições preservam as distâncias
+n_cidades = len(cities)
+J = np.eye(n_cidades) - 1.0 / n_cidades
+w, V = np.linalg.eigh(-0.5 * J @ (D ** 2) @ J)
+ordem = np.argsort(w)[::-1][:2]
+coords = V[:, ordem] * np.sqrt(np.clip(w[ordem], 0, None))
+cd = city_idx["City_61"]
+if coords[cd, 1] > np.median(coords[:, 1]):  # centro de distribuição embaixo
+    coords[:, 1] *= -1
+
+plt.rcParams.update({"font.size": 7, "axes.linewidth": 0.6, "xtick.labelsize": 6,
+                     "ytick.labelsize": 6, "axes.labelsize": 7})
+```
+
+<!-- As inclusões são resolvidas a partir do documento raiz (`main.qmd`), não
+     deste arquivo: daí o caminho completo a partir de `report/`. Os quatro
+     arquivos seguintes mantêm, cada um, um tópico da análise exploratória. -->
+
+{{< include sections/metodologia/base-de-dados/frota.qmd >}}
+
+{{< include sections/metodologia/base-de-dados/pacotes.qmd >}}
+
+{{< include sections/metodologia/base-de-dados/pedidos.qmd >}}
+
+{{< include sections/metodologia/base-de-dados/rotas.qmd >}}

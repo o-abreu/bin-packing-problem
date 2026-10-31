@@ -3,28 +3,31 @@
   pkgs,
   inputs,
   ...
-}: {
+}: let
+  quartoPinned = inputs.nixpkgs-quarto.legacyPackages.${pkgs.system}.quarto;
+  venvPython = "${config.devenv.root}/.devenv/state/venv/bin/python";
+  quarto = pkgs.runCommand "quarto-${quartoPinned.version}-venv" {} ''
+    mkdir -p $out/bin
+    install -m755 ${quartoPinned}/bin/quarto $out/bin/quarto
+
+    # remove o bloco "--prefix QUARTO_PYTHON" gerado pelo makeWrapper
+    sed -i '/^QUARTO_PYTHON=/,/^export QUARTO_PYTHON$/d' $out/bin/quarto
+    # e fixa o interpretador do venv no lugar
+    sed -i "s|^exec -a|export QUARTO_PYTHON='${venvPython}'\nexec -a|" $out/bin/quarto
+
+    # falha ruidosamente se o layout do wrapper mudar (bump do nixpkgs-quarto)
+    grep -qF "export QUARTO_PYTHON='${venvPython}'" $out/bin/quarto \
+      || { echo "quarto: patch do wrapper falhou (layout do nixpkgs mudou?)" >&2; exit 1; }
+  '';
+in {
   env = {
     GRB_LICENSE_FILE = "${config.devenv.root}/gurobi.lic";
-    QUARTO_PYTHON = "${config.devenv.root}/.devenv/state/venv/bin/python";
   };
 
-  # https://devenv.sh/packages/
   packages = with pkgs; [
     git
-
-    # Gurobi comercial: gurobi_cl, grbgetkey (gera o gurobi.lic), libgurobi
-    # e headers. A licença não vem no pacote — ver "Licença" no README/AGENTS.
     gurobi
-
-    # quarto pinned to 1.6.43 (see devenv.yaml nixpkgs-quarto input):
-    # the dfolio/quarto-ieee extension is built/tested against ~1.5/1.6;
-    # the pin keeps the format module and deno runtime mutually consistent
-    inputs.nixpkgs-quarto.legacyPackages.${pkgs.system}.quarto
-
-    # TeX Live for the IEEE journal template: quarto only whitelists
-    # pdflatex/xelatex/lualatex/latexmk as PDF engines (no tectonic), and
-    # the custom-template format requires a recognized LaTeX engine
+    quarto
     (texlive.withPackages (ps:
       with ps; [
         scheme-small # base LaTeX toolchain (pdflatex, latexmk...)
@@ -35,7 +38,6 @@
       ]))
   ];
 
-  # https://devenv.sh/languages/
   languages.python = {
     enable = true;
     version = "3.12";
@@ -47,14 +49,11 @@
     ];
   };
 
-  # https://devenv.sh/scripts/
-  scripts.render-report.exec = ''
-    # report/main.qmd -> output/ (PDF IEEE via pdflatex; quarto 1.6.43 travado).
-    # QUARTO_PYTHON fixado no interpretador do venv do projeto — o quarto usa
-    # esse kernel para executar os chunks; o venv tem nbclient/nbformat
-    # porque o kernel runner precisa deles.
-    export QUARTO_PYTHON="$(command -v python)"
-    mkdir -p output
-    quarto render report/main.qmd --output-dir output
-  '';
+  # report/main.qmd -> output/ (PDF IEEE via pdflatex; quarto 1.6.43 travado).
+  scripts.render-report.exec =
+    # bash
+    ''
+      mkdir -p output
+      quarto render report/main.qmd --output-dir output
+    '';
 }

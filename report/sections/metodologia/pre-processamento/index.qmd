@@ -1,0 +1,22 @@
+## Pré-processamento
+
+O conjunto bruto é uma tabela de pedidos; o modelo precisa de instâncias — e de
+instâncias pequenas. Esta seção descreve as etapas que transformam um no outro
+sem alterar o ótimo: normalização de unidades, recorte das instâncias e redução
+do modelo. O agrupamento de pacotes idênticos, que também reduz a instância, é
+parte da formulação e está descrito na seção de modelagem.
+
+O que segue é executado pelos blocos de código abaixo. Eles ficam ocultos no PDF
+(`echo: false`), mas permanecem no `.qmd`: cada bloco é precedido do que faz e
+seguido do que produziu. O resultado é gravado em `data/pre-processed/` e
+reaproveitado nas execuções seguintes.
+
+<!-- As inclusões são resolvidas a partir do documento raiz (`main.qmd`), não
+     deste arquivo: daí o caminho completo a partir de `report/`. Cada tópico
+     mora num arquivo próprio, na ordem em que aparece no texto. -->
+
+{{< include sections/metodologia/pre-processamento/normalizacao.qmd >}}
+
+{{< include sections/metodologia/pre-processamento/reducao.qmd >}}
+
+{{< include sections/metodologia/pre-processamento/custo.qmd >}}

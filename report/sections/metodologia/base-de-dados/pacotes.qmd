@@ -1,0 +1,72 @@
+### Pacotes
+
+Os 4.635 pacotes não são 4.635 objetos distintos do ponto de vista do modelo. O
+`Item_ID` é único por construção, mas as combinações de **(área, peso)** são
+apenas **134**; os dez tipos mais frequentes concentram **37%** dos itens e o
+mais frequente aparece 233 vezes, enquanto 12 tipos ocorrem uma única vez. Se a
+identificação incluir também as janelas de tempo, o número de **classes**
+(área, peso, disponibilidade, prazo) sobe para **235** — e, por rota, a variedade
+é ainda menor: nenhuma rota passa de 20 classes. É essa duplicação que permite
+descrever a instância por **grupos de pacotes idênticos**, com uma variável de
+contagem por grupo em vez de um binário por item — a decisão de modelagem
+adotada na formulação.
+
+Em termos de tamanho, os pacotes ocupam de 0,64 a 9,72 m² (mediana 1,25) e pesam
+de 46 a 3.130 kg (mediana 1.000) — ambos com cauda longa à direita, como mostra
+a @fig-pacotes-dist. As duas distribuições são assimétricas na mesma direção, o
+que já sugere que área e peso não variam de forma independente.
+
+```{python}
+#| echo: false
+#| warning: false
+#| label: fig-pacotes-dist
+#| fig-width: 3.3
+#| fig-height: 2.9
+#| fig-cap: 'Distribuição dos 4.635 pacotes de `order_large.csv`: área (m²) e peso (kg), em painéis empilhados. Linha vertical: mediana (1,25 m² e 1.000 kg). As duas variáveis têm cauda longa à direita.'
+
+fig, axes = plt.subplots(2, 1)
+for ax, col, rotulo in ((axes[0], "area_m2", "área (m²)"),
+                        (axes[1], "weight_kg", "peso (kg)")):
+    ax.hist(items[col], bins=35, color="0.78", edgecolor="black", linewidth=0.3)
+    ax.axvline(items[col].median(), color="black", linewidth=1.0)
+    ax.set_xlabel(rotulo)
+    ax.set_ylabel("pacotes")
+plt.tight_layout()
+```
+
+Área e peso crescem juntos, mas **longe de proporcionalmente**: a correlação é
+de 0,68 (Pearson) e 0,72 (Spearman), e a razão entre eles — a densidade — varia
+de 40 a 1.623 kg/m², com mediana 589. A @fig-pacotes-corr mostra esse leque:
+sobre uma mesma área, o peso observado pode variar por um fator próximo de 10.
+
+```{python}
+#| echo: false
+#| warning: false
+#| label: fig-pacotes-corr
+#| fig-width: 3.3
+#| fig-height: 2.5
+#| fig-cap: 'Relação entre área e peso dos pacotes (escalas logarítmicas, um ponto por item). As retas tracejadas marcam densidades constantes; a faixa ocupada mostra que a densidade varia cerca de 40 vezes entre os itens. Correlação de Spearman: 0,72.'
+
+rho = items[["area_m2", "weight_kg"]].corr(method="spearman").iloc[0, 1]
+fig, ax = plt.subplots()
+ax.scatter(items["area_m2"], items["weight_kg"], s=2, color="0.35", alpha=0.20,
+           linewidths=0)
+x = np.array([0.6, 12.0])
+for dens_ref in (250, 500, 1000, 1500):
+    ax.plot(x, dens_ref * x, linestyle="--", color="black", linewidth=0.5)
+    ax.annotate(f"{dens_ref}", xy=(11.5, dens_ref * 11.5), fontsize=5,
+                ha="right", va="bottom")
+ax.text(0.03, 0.96, f"Spearman ρ = {rho:.2f}".replace(".", ","),
+        transform=ax.transAxes, va="top", fontsize=6)
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_xlabel("área (m²)")
+ax.set_ylabel("peso (kg)")
+plt.tight_layout()
+```
+
+Essa dispersão tem consequência direta no modelo: como a densidade não é
+constante, **não existe um fator fixo** que converta área em peso, e as duas
+restrições de capacidade (R2 e R3) mordem em proporções diferentes conforme a
+rota — é o que justifica tratar a instância como bidimensional em vez de
+escolher uma das duas dimensões como proxy.

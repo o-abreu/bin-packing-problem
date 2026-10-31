@@ -1,0 +1,125 @@
+### Normalização e recorte
+
+As colunas `Area` e `Weight` vêm escaladas por $10^4$ e precisam virar m² e kg;
+as distâncias, de metros para km. Os carimbos `Available_Time` e `Deadline` são
+lidos como datas e convertidos em **horas contadas a partir da menor
+disponibilidade da instância**, o que mantém os números pequenos e a constante
+$M$ da modelagem no menor valor possível — $M = \max_g dl_g - \min_g av_g +
+t_{\text{viagem}} + \Delta$.
+
+O primeiro bloco carrega as três tabelas já usadas na análise exploratória,
+converte as unidades e prepara a chave de instância (destino, data de
+disponibilidade). Ele também decide se o resultado anterior pode ser
+reaproveitado: o cache vale enquanto `data/pre-processed/` for mais novo que
+`order_large.csv`, `distance.csv` e `trucks.csv`.
+
+```{python}
+#| echo: false
+#| label: pp-normalizacao
+import json
+import time
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+OUT = Path("../data/pre-processed")
+DELTA_H = 4.0   # janela de consolidação (h)
+VEL_KMH = 40.0  # velocidade da frota (trucks.csv)
+t_inicio = time.perf_counter()
+
+# unidades e calendário
+pedidos = items.copy()  # order_large.csv, com area_m2 e peso_kg já convertidos
+pedidos["av"] = pd.to_datetime(pedidos["Available_Time"])
+pedidos["dl"] = pd.to_datetime(pedidos["Deadline"])
+pedidos["dia"] = pedidos["av"].dt.date
+km = dist.query("Source == 'City_61'").set_index("Destination")["Distance(M)"] / 1e3
+pedidos["dist_km"] = pedidos["Destination"].map(km)
+
+capacidade_area = trucks["area_capacity_m2"].to_numpy()
+capacidade_peso = trucks["weight_capacity_kg"].to_numpy()
+custo_km = trucks["cost_per_km"].to_numpy()
+nomes_tipo = [f"{x:g}" for x in trucks["truck_type"]]
+
+# cache: válido enquanto o resultado for mais novo que as tabelas brutas
+brutos = [Path("../data/raw") / f
+          for f in ("order_large.csv", "distance.csv", "trucks.csv")]
+caminho_inst = OUT / "instances.csv"
+caminho_grupos = OUT / "groups.csv"
+do_cache = (caminho_inst.exists() and caminho_grupos.exists()
+            and min(caminho_inst.stat().st_mtime,
+                    caminho_grupos.stat().st_mtime)
+            >= max(p.stat().st_mtime for p in brutos))
+```
+
+O segundo bloco percorre as combinações (destino, dia de disponibilidade) e,
+para cada uma, faz três coisas: converte os tempos para horas relativas à origem
+da instância; agrupa os pacotes idênticos — mesma área, peso, disponibilidade e
+prazo — em grupos com multiplicidade $n_g$; e guarda as arrays de cada instância
+para o bloco seguinte. O agrupamento é o que permite ao modelo trabalhar com
+contagens em vez de um binário por pacote.
+
+```{python}
+#| echo: false
+#| label: pp-instancias
+if not do_cache:
+    grupos, dados_inst = [], {}
+    for (destino, dia), d in pedidos.groupby(["Destination", "dia"], sort=True):
+        origem = d["av"].min()
+        av = ((d["av"] - origem).dt.total_seconds() / 3600).to_numpy()
+        dl = ((d["dl"] - origem).dt.total_seconds() / 3600).to_numpy()
+        a = d["area_m2"].to_numpy()
+        w = d["weight_kg"].to_numpy()
+        dist_km = float(d["dist_km"].iloc[0])
+        t_viagem = dist_km / VEL_KMH
+        ident = f"{destino}_{dia.isoformat()}"
+
+        # grupos de pacotes idênticos
+        chave = pd.DataFrame({"a": a, "w": w, "av": av, "dl": dl})
+        g = chave.groupby(["a", "w", "av", "dl"], sort=True).size()
+        for k, ((ga, gw, gav, gdl), n) in enumerate(g.items()):
+            grupos.append(dict(instance=ident, group=k, area_m2=ga, weight_kg=gw,
+                               avail_h=gav, deadline_h=gdl, count=int(n)))
+
+        dados_inst[ident] = dict(destino=destino, dia=dia, a=a, w=w, av=av, dl=dl,
+                                 dist_km=dist_km, t_viagem=t_viagem, grupos=g,
+                                 n=len(d),
+                                 inviaveis=int((av + t_viagem > dl + 1e-9).sum()))
+```
+
+O recorte é **rota $\times$ dia de disponibilidade**, e é exato, não uma
+conveniência: como os dias consecutivos de liberação distam 24 h e um caminhão
+só consolida pacotes cuja disponibilidade difere em até $\Delta = 4$ h, nenhuma
+solução mistura dias.
+
+```{python}
+#| echo: false
+#| label: pp-resumo-instancias
+if do_cache:
+    _inst = pd.read_csv(caminho_inst)
+    _pac = _inst["n_packages"]
+    _inviaveis = int(_inst["infeasible_items"].sum())
+    _grupos = len(pd.read_csv(caminho_grupos))
+else:
+    _pac = pd.Series([d["n"] for d in dados_inst.values()])
+    _inviaveis = sum(d["inviaveis"] for d in dados_inst.values())
+    _grupos = len(grupos)
+
+resumo = dict(
+    instancias=f"{len(_pac)}",
+    grupos=f"{_grupos}",
+    pacotes=f"{int(_pac.sum()):,}".replace(",", "."),
+    mediana=f"{int(_pac.median())}",
+    p90=f"{int(_pac.quantile(0.9))}",
+    maximo=f"{int(_pac.max())}",
+    inviaveis=f"{_inviaveis}",
+)
+```
+
+O recorte devolve `{python} resumo["instancias"]` instâncias não vazias —
+mediana de `{python} resumo["mediana"]` pacotes, p90 de `{python} resumo["p90"]`
+e máximo de `{python} resumo["maximo"]` —, que é a base dos três portes do plano
+experimental. Nenhum grupo tem $av_g + t_{\text{viagem}} > dl_g$
+(`{python} resumo["inviaveis"]` casos): a triagem de inviabilidade não corta
+instância alguma. O agrupamento comprime as `{python} resumo["pacotes"]` linhas
+de pacotes em `{python} resumo["grupos"]` grupos (instância × classe).
