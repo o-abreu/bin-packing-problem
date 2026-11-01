@@ -42,8 +42,8 @@ Fonte:
 [Large-Scale Route Optimization](https://www.kaggle.com/datasets/mexwell/large-scale-route-optimization)
 (MIT), espelho dos dados de amostra do acelerador da Microsoft
 ([`dstoolkit-route-optimization`](https://github.com/microsoft/dstoolkit-route-optimization)).
-É uma **amostra publicada** "inspirada num cenário real" de um cliente de
-manufatura — não são dados brutos de empresa.
+É um _benchmark_ "inspirado num cenário real" de um cliente de manufatura — não
+são dados brutos de empresa.
 
 | arquivo                    | o que é                                                               |
 | -------------------------- | --------------------------------------------------------------------- |

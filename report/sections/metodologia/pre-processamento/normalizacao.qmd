@@ -2,9 +2,9 @@
 
 As colunas `Area` e `Weight` vêm escaladas por $10^4$ e precisam virar m² e kg;
 as distâncias, de metros para km. Os carimbos `Available_Time` e `Deadline` são
-lidos como datas e convertidos em **horas contadas a partir da menor
-disponibilidade da instância**, o que mantém os números pequenos e a constante
-$M$ da modelagem no menor valor possível — $M = \max_g dl_g - \min_g av_g +
+lidos como datas e convertidos em horas contadas a partir da menor
+disponibilidade da instância, o que mantém os números pequenos e a constante $M$
+da modelagem no menor valor possível — $M = \max_g dl_g - \min_g av_g +
 t_{\text{viagem}} + \Delta$.
 
 O primeiro bloco carrega as três tabelas já usadas na análise exploratória,
@@ -81,7 +81,7 @@ if not do_cache:
                                  inviaveis=int((av + t_viagem > dl + 1e-9).sum()))
 ```
 
-O recorte é **rota $\times$ dia de disponibilidade**, e é exato, não uma
+O recorte é rota $\times$ dia de disponibilidade, e é exato, não uma
 conveniência: como os dias consecutivos de liberação distam 24 h e um caminhão
 só consolida pacotes cuja disponibilidade difere em até $\Delta = 4$ h, nenhuma
 solução mistura dias.

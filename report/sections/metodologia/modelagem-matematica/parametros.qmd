@@ -65,10 +65,9 @@ compartilham a mesma quádrupla (área, peso, disponibilidade, prazo). No conjun
 completo há `{python} base["pacotes"]` pacotes para `{python} pac["classes"]`
 classes distintas — `{python} resumo["grupos"]` grupos quando contados por
 instância —, e nenhuma instância passa de `{python} tam["G_max"]` grupos, o que
-encurta a
-formulação em uma ordem de grandeza (ver a análise de complexidade). Se todos os
-pacotes fossem distintos, teríamos $n_g = 1$ para todo $g$ e a formulação abaixo
-coincidiria com a versão item a item.
+encurta a formulação em uma ordem de grandeza (ver a análise de complexidade).
+Se todos os pacotes fossem distintos, teríamos $n_g = 1$ para todo $g$ e a
+formulação abaixo coincidiria com a versão item a item.
 
 #### Área enquanto uma grandeza vetorial
 
@@ -86,24 +85,24 @@ poderia ocorrer na atual configuração.
 
 #### Grandezas de tempo
 
-As grandezas — $av_g$, $dl_g$, $\tau_j$, $\Delta$ e $M$ — são medidas em **horas
-a partir de uma origem comum** (o menor `Available_Time` da instância): o
-dataset traz carimbos de data e hora, que precisam virar números para entrar nas
+As grandezas — $av_g$, $dl_g$, $\tau_j$, $\Delta$ e $M$ — são medidas em horas a
+partir de uma origem comum (o menor `Available_Time` da instância): o dataset
+traz carimbos de data e hora, que precisam virar números para entrar nas
 restrições lineares, e a hora é a unidade coerente com $v$ (km/h).
 
 #### Classes
 
-A **classe** é o tipo de caminhão $t$, com $(A_t, W_t, C_t)$. O custo por
-unidade de capacidade é monotônico no tamanho (`{python} frota["ca_pior"]` por
-m² no caminhão de `{python} frota["ca_pior_tipo"]` m contra
+A classe é o tipo de caminhão $t$, com $(A_t, W_t, C_t)$. O custo por unidade de
+capacidade é monotônico no tamanho (`{python} frota["ca_pior"]` por m² no
+caminhão de `{python} frota["ca_pior_tipo"]` m contra
 `{python} frota["ca_melhor"]` no de `{python} frota["ca_melhor_tipo"]` m), mas o
-custo **por caminhão** cresce com o porte — é
-esse _trade-off_ que dá conteúdo ao VSBPP: para cargas pequenas, um caminhão
-menor é mais barato apesar de menos eficiente por unidade.
+custo _por caminhão_ cresce com o porte — é esse _trade-off_ que dá conteúdo ao
+VSBPP: para cargas pequenas, um caminhão menor é mais barato apesar de menos
+eficiente por unidade.
 
 #### Janela de consolidação
 
-$\Delta$ **não é um dado**: é um parâmetro de política herdado do acelerador de
+$\Delta$ não é um dado: é um parâmetro de política herdado do acelerador de
 referência. No `README` do repositório [@routeopt2022], ela aparece como a
 terceira restrição do problema:
 

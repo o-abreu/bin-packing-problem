@@ -1,7 +1,7 @@
 # Introdução
 
-O custo de uma cadeia de suprimentos é decidido, em boa parte, pela **composição
-da carga**: quantos veículos partem, de que tamanho, e com qual fração de sua
+O custo de uma cadeia de suprimentos é decidido, em boa parte, pela composição
+da carga: quantos veículos partem, de que tamanho, e com qual fração de sua
 capacidade ocupada. Consolidar pacotes que seguem a mesma origem e o mesmo
 destino em menos viagens é, por isso, uma das alavancas operacionais mais
 diretas de custo — e uma das mais difíceis, porque o número de planos de
@@ -31,7 +31,7 @@ distintos e o objetivo passa a ser o custo total das caixas usadas
 [@friesen1986; @kang2003]; nas versões de custo generalizado, cada classe tem
 seu próprio custo e ainda assim existem esquemas de aproximação assintóticos
 [@murgolo1987; @epstein2008]. Essa é a variante que interessa a um operador
-logístico: a decisão não é apenas "quantos caminhões", mas também "**quais**
+logístico: a decisão não é apenas "quantos caminhões", mas também "_quais_
 caminhões".
 
 A isso soma-se uma dificuldade que o contexto físico impõe e que a literatura
@@ -65,10 +65,9 @@ explícitos. São `{python} base["pacotes"]` pacotes em `{python} base["pedidos"
 pedidos e `{python} base["destinos"]` pares origem–destino, com pacotes de
 `{python} base["area_min"]` a `{python} base["area_max"]` m² e de
 `{python} base["peso_min"]` a `{python} base["peso_max"]` kg — nenhum excede o
-menor caminhão. Trata-se de uma **amostra publicada**,
-declarada pelos autores como "inspirada em um cenário real" de um cliente de
-manufatura, e não de dados brutos da empresa; isso basta para o exercício, mas
-precisa ser dito.
+menor caminhão. Trata-se de uma **amostra publicada**, declarada pelos autores
+como "inspirada em um cenário real" de um cliente de manufatura, e não de dados
+brutos da empresa; isso basta para o exercício, mas precisa ser dito.
 
 O acelerador resolve o problema de roteirização de veículos (VRP), no qual um
 caminhão atende várias paradas. Aqui adotamos a política oposta: **viagem

@@ -34,26 +34,24 @@ pac = {
 }
 ```
 
-
 Os `{python} pac["pacotes"]` pacotes não são `{python} pac["pacotes"]` objetos
-distintos do ponto de vista do modelo. O `Item_ID` é único por construção, mas as
-combinações de **(área, peso)** são apenas **`{python} pac["tipos"]`**; os dez
+distintos do ponto de vista do modelo. O `Item_ID` é único por construção, mas
+as combinações de (área, peso) são apenas **`{python} pac["tipos"]`**; os dez
 tipos mais frequentes concentram **`{python} pac["top10"]`%** dos itens e o mais
 frequente aparece `{python} pac["freq_max"]` vezes, enquanto
 `{python} pac["singleton"]` tipos ocorrem uma única vez. Se a identificação
 incluir também as janelas de tempo, o número de **classes** (área, peso,
 disponibilidade, prazo) sobe para **`{python} pac["classes"]`** — e, por rota, a
-variedade é ainda menor: nenhuma rota passa de
-`{python} pac["classes_rota"]` classes. É essa duplicação que permite
-descrever a instância por **grupos de pacotes idênticos**, com uma variável de
-contagem por grupo em vez de um binário por item — a decisão de modelagem
-adotada na formulação.
+variedade é ainda menor: nenhuma rota passa de `{python} pac["classes_rota"]`
+classes. É essa duplicação que permite descrever a instância por **grupos de
+pacotes idênticos**, com uma variável de contagem por grupo em vez de um binário
+por item — a decisão de modelagem adotada na formulação.
 
 Em termos de tamanho, os pacotes ocupam de `{python} pac["area_min"]` a
 `{python} pac["area_max"]` m² (mediana `{python} pac["area_med"]`) e pesam de
 `{python} pac["peso_min"]` a `{python} pac["peso_max"]` kg (mediana
-`{python} pac["peso_med"]`) — ambos com cauda longa à direita, como mostra
-a @fig-pacotes-dist. As duas distribuições são assimétricas na mesma direção, o
+`{python} pac["peso_med"]`) — ambos com cauda longa à direita, como mostra a
+@fig-pacotes-dist. As duas distribuições são assimétricas na mesma direção, o
 que já sugere que área e peso não variam de forma independente.
 
 ```{python}
@@ -74,9 +72,9 @@ for ax, col, rotulo in ((axes[0], "area_m2", "área (m²)"),
 plt.tight_layout()
 ```
 
-Área e peso crescem juntos, mas **longe de proporcionalmente**: a correlação é
-de `{python} pac["pearson"]` (Pearson) e `{python} pac["spearman"]` (Spearman), e
-a razão entre eles — a densidade — varia de `{python} pac["dens_min"]` a
+Área e peso crescem juntos, mas longe de proporcionalmente: a correlação é de
+`{python} pac["pearson"]` (Pearson) e `{python} pac["spearman"]` (Spearman), e a
+razão entre eles — a densidade — varia de `{python} pac["dens_min"]` a
 `{python} pac["dens_max"]` kg/m², com mediana `{python} pac["dens_med"]`. A
 @fig-pacotes-corr mostra esse leque: sobre uma mesma área, o peso observado pode
 variar por um fator próximo de 10.

@@ -91,7 +91,7 @@ Os `{python} ped["pacotes"]` pacotes chegam em **`{python} ped["pedidos"]`
 pedidos** (`Order_ID`), de tamanhos muito desiguais: de `{python} ped["min"]` a
 `{python} ped["max"]` pacotes, com mediana de `{python} ped["mediana"]` (p10 de
 `{python} ped["p10"]`, p90 de `{python} ped["p90"]`) e peso mediano de
-`{python} ped["peso_med"]` t. Um pedido é, ainda, **homogêneo**: em
+`{python} ped["peso_med"]` t. Um pedido é, ainda, homogêneo: em
 `{python} ped["pct"][1]`% deles há um único tipo (área, peso), em
 `{python} ped["pct"][2]`% dois, em `{python} ped["pct"][3]`% três e em
 `{python} ped["pct"][4]`% quatro. A @fig-pedidos-volume resume as duas coisas —
@@ -129,9 +129,9 @@ plt.tight_layout()
 O tamanho desigual dos pedidos produz uma concentração moderada: o índice de
 Gini dos pacotes por pedido é de **`{python} ped["gini"]`** — os 10% maiores
 pedidos carregam `{python} ped["top10"]`% dos pacotes, e a metade menor responde
-por `{python} ped["metade"]`% —, como mostra a @fig-pedidos-lorenz. Nada parecido
-com uma distribuição de cauda pesada: há pedidos grandes, mas não há alguns
-poucos pedidos dominando o conjunto.
+por `{python} ped["metade"]`% —, como mostra a @fig-pedidos-lorenz. Nada
+parecido com uma distribuição de cauda pesada: há pedidos grandes, mas não há
+alguns poucos pedidos dominando o conjunto.
 
 ```{python}
 #| echo: false
@@ -152,16 +152,17 @@ ax.set_aspect("equal")
 plt.tight_layout()
 ```
 
-No tempo, a oferta é concentrada e a demanda é espalhada. Todos os `{python} ped["pacotes"]` pacotes ficam disponíveis em
-**`{python} ped["lib_dias"]` dias** (`{python} ped["lib_periodo"]`), em lotes semelhantes —
-`{python} ped["lotes"][0]`, `{python} ped["lotes"][1]` e
-`{python} ped["lotes"][2]` pacotes, cerca de
-`{python} ped["tons_dia"]` mil t por dia —, enquanto os prazos se distribuem por
-**`{python} ped["prazo_dias"]` dias** (`{python} ped["prazo_periodo"]`), com pico
-em `{python} ped["pico_dia"]` de `{python} ped["pico_mes"]` (`{python} ped["pico_pedidos"]` pedidos). A
-janela entre disponibilidade e prazo tem mediana de
-`{python} ped["janela_med_d"]` dias e máximo de `{python} ped["janela_max_d"]`. A
-@fig-pedidos-tempo compara as duas distribuições.
+No tempo, a oferta é concentrada e a demanda é espalhada. Todos os
+`{python} ped["pacotes"]` pacotes ficam disponíveis em
+**`{python} ped["lib_dias"]` dias** (`{python} ped["lib_periodo"]`), em lotes
+semelhantes — `{python} ped["lotes"][0]`, `{python} ped["lotes"][1]` e
+`{python} ped["lotes"][2]` pacotes, cerca de `{python} ped["tons_dia"]` mil t
+por dia —, enquanto os prazos se distribuem por **`{python} ped["prazo_dias"]`
+dias** (`{python} ped["prazo_periodo"]`), com pico em `{python} ped["pico_dia"]`
+de `{python} ped["pico_mes"]` (`{python} ped["pico_pedidos"]` pedidos). A janela
+entre disponibilidade e prazo tem mediana de `{python} ped["janela_med_d"]` dias
+e máximo de `{python} ped["janela_max_d"]`. A @fig-pedidos-tempo compara as duas
+distribuições.
 
 ```{python}
 #| echo: false
@@ -191,13 +192,13 @@ ax.set_ylabel("pedidos com prazo")
 plt.tight_layout()
 ```
 
-A concentração também é espacial — mas **heterogênea**: dos
-`{python} ped["destinos"]` destinos, `{python} ped["um_dia"]` recebem carga em um único
-dia, `{python} ped["dois_dias"]` em dois e `{python} ped["tres_dias"]` nos três,
-e a mediana do dia dominante é de `{python} ped["dominante"]`% da carga do
-destino. O padrão, porém, se inverte com o volume: entre os dez maiores,
-`{python} ped["top10_tres"]` usam os três dias (a carga de `City_58` reparte-se
-em `{python} ped["c58"][0]`%, `{python} ped["c58"][1]`% e
+A concentração também é espacial — mas heterogênea: dos
+`{python} ped["destinos"]` destinos, `{python} ped["um_dia"]` recebem carga em
+um único dia, `{python} ped["dois_dias"]` em dois e `{python} ped["tres_dias"]`
+nos três, e a mediana do dia dominante é de `{python} ped["dominante"]`% da
+carga do destino. O padrão, porém, se inverte com o volume: entre os dez
+maiores, `{python} ped["top10_tres"]` usam os três dias (a carga de `City_58`
+reparte-se em `{python} ped["c58"][0]`%, `{python} ped["c58"][1]`% e
 `{python} ped["c58"][2]`%), enquanto os destinos pequenos tendem a concentrar
 tudo num dia só.
 
@@ -209,12 +210,12 @@ reflete a própria janela de consolidação.
 
 A janela entre disponibilidade e prazo mede de `{python} ped["janela_min_h"]` a
 `{python} ped["janela_max_h"]` h (mediana de `{python} ped["janela_med_h"]` h),
-mas o trânsito consome parte dela: descontando $t_{\text{viagem}} = d/v$, a folga
-mediana cai para **`{python} ped["folga_med"]` h** e `{python} ped["folga_curta"]`
-dos `{python} ped["pacotes"]` itens ficam com menos de 4 h. Nesses casos o
-instante de partida é praticamente forçado, e a única liberdade que resta ao
-modelo é o emparelhamento — é aí que R6–R8 mordem. A @fig-pedidos-janela mostra
-as duas distribuições.
+mas o trânsito consome parte dela: descontando $t_{\text{viagem}} = d/v$, a
+folga mediana cai para **`{python} ped["folga_med"]` h** e
+`{python} ped["folga_curta"]` dos `{python} ped["pacotes"]` itens ficam com
+menos de 4 h. Nesses casos o instante de partida é praticamente forçado, e a
+única liberdade que resta ao modelo é o emparelhamento — é aí que R6–R8 mordem.
+A @fig-pedidos-janela mostra as duas distribuições.
 
 ```{python}
 #| echo: false
@@ -242,10 +243,10 @@ plt.tight_layout()
 ```
 
 Dois fatos fecham a leitura dos pedidos como unidade de análise. Primeiro,
-`Available_Time` e `Deadline` são **constantes dentro de cada pedido** nos
-`{python} ped["pedidos"]` casos: o pedido é a menor unidade temporal do conjunto,
-e não o pacote. Segundo, como um pedido é quase sempre homogêneo, a diversidade
-de tipos que aparece numa rota vem da **mistura de pedidos**, não da composição
-interna de cada um. É por isso que o recorte experimental natural é rota × dia de
-disponibilidade — o que devolve `{python} ped["instancias"]` instâncias não
-vazias, tratadas na próxima subseção.
+`Available_Time` e `Deadline` são constantes dentro de cada pedido nos
+`{python} ped["pedidos"]` casos: o pedido é a menor unidade temporal do
+conjunto, e não o pacote. Segundo, como um pedido é quase sempre homogêneo, a
+diversidade de tipos que aparece numa rota vem da mistura de pedidos, não da
+composição interna de cada um. É por isso que o recorte experimental natural é
+rota × dia de disponibilidade — o que devolve `{python} ped["instancias"]`
+instâncias não vazias, tratadas na próxima subseção.

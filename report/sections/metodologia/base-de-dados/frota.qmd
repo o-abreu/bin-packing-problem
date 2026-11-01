@@ -67,8 +67,8 @@ O custo por unidade de capacidade é monotônico no porte do veículo: cai de US
 `{python} frota["ca_pior"]`/m² no caminhão de `{python} frota["ca_pior_tipo"]` m
 para US\$ `{python} frota["ca_melhor"]`/m² no de
 `{python} frota["ca_melhor_tipo"]` m (e de US\$ `{python} frota["cw_pior"]`/kg
-para US\$ `{python} frota["cw_melhor"]`/kg), de modo que "maior é mais barato por
-unidade". O indicador oposto, porém, não é monotônico: a densidade máxima do
+para US\$ `{python} frota["cw_melhor"]`/kg), de modo que "maior é mais barato
+por unidade". O indicador oposto, porém, não é monotônico: a densidade máxima do
 caminhão **cai** com o porte, de `{python} frota["dens_125"]` kg/m² no de 12,5 m
 para `{python} frota["dens_165"]` kg/m² no de 16,5 m e
 `{python} frota["dens_76"]` kg/m² no de 7,6 m. As duas tendências apontam para
@@ -78,9 +78,9 @@ otimização, não uma regra de bolso.
 Nenhum pacote excede a maior classe — o item mais pesado tem
 `{python} frota["item_peso_max"]` kg e o maior em área,
 `{python} frota["item_area_max"]` m², contra
-`{python} frota["caminhao_peso_max"]` kg e
-`{python} frota["caminhao_area_max"]` m² —, de modo que a frota, por si só,
-**não torna nenhuma instância inviável**: ela encarece a solução, não a impede.
+`{python} frota["caminhao_peso_max"]` kg e `{python} frota["caminhao_area_max"]`
+m² —, de modo que a frota, por si só, não torna nenhuma instância inviável: ela
+encarece a solução, não a impede.
 
 A densidade é o parâmetro que decide qual dos dois recursos se esgota primeiro:
 uma carga cuja densidade fica abaixo de $W_t/A_t$ enche a área do caminhão antes
@@ -88,11 +88,11 @@ de atingir o peso máximo, e acima desse limiar acontece o contrário. A
 @fig-densidade mostra a distribuição item a item. Tomada item a item, a mediana
 é de **`{python} frota["dens_mediana"]` kg/m²** — à esquerda das razões
 $W_t/A_t$ dos caminhões de 16,5 m (`{python} frota["dens_165"]`), 12,5 m
-(`{python} frota["dens_125"]`) e 9,6 m (`{python} frota["dens_96"]`), e à direita
-da do caminhão de 7,6 m (`{python} frota["dens_76"]`) —, embora a cauda se
-estenda bem acima delas. Somando a carga de uma rota, a densidade agregada cai
-para **`{python} frota["dens_agregada"]` kg/m²**, e é esse valor que decide o
-regime de quase todas as rotas.
+(`{python} frota["dens_125"]`) e 9,6 m (`{python} frota["dens_96"]`), e à
+direita da do caminhão de 7,6 m (`{python} frota["dens_76"]`) —, embora a cauda
+se estenda bem acima delas. Somando a carga de uma rota, a densidade agregada
+cai para **`{python} frota["dens_agregada"]` kg/m²**, e é esse valor que decide
+o regime de quase todas as rotas.
 
 ```{python}
 #| echo: false

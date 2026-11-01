@@ -76,7 +76,7 @@ $$\sum_{t \in T} y_{jt} \ \ge\ \sum_{t \in T} y_{j+1,t}
 
 R10 exige que os caminhões abertos ocupem um prefixo de $J$; é a ordenação já
 empregada em formulações de empacotamento com caixas idênticas [@salem2020] e
-**não exclui soluções**: dada qualquer solução viável com $o$ caminhões abertos,
+não exclui soluções: dada qualquer solução viável com $o$ caminhões abertos,
 renumere-os $1, \dots, o$ — trocar um caminhão aberto por um slot vazio preserva
 viabilidade e custo —, e o ótimo é preservado. A restrição colapsa as $m!$
 ordenações de slot em uma única configuração de abertura, os $m-o$ slots vazios
@@ -85,6 +85,6 @@ sendo exatamente os últimos.
 O que R10 **não** faz é fixar qual caminhão aberto é qual: com $o$ caminhões
 abertos, suas $o!$ permutações continuam produzindo soluções distintas de mesmo
 custo, que o _branch-and-bound_ não consegue distinguir [@margot2010;
-@ostrowski2011]. A simetria entre **pacotes idênticos**, por outro lado, já não
+@ostrowski2011]. A simetria entre pacotes idênticos, por outro lado, já não
 existe: como não há um binário por cópia, mas apenas a contagem $z_{gj}$, não há
 identidades para permutar.

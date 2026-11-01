@@ -31,10 +31,10 @@ As `{python} tam["inst"]` instâncias vão de `{python} tam["n_min"]` a
 `{python} tam["m_min"]` a `{python} tam["m_max"]`. Na maior delas
 (`{python} tam["maior_id"]`, `{python} tam["maior_n"]` pacotes em
 `{python} tam["maior_G"]` grupos, `{python} tam["maior_m"]` slots), a formulação
-agregada tem `{python} tam["agg_vars"]` variáveis e
-`{python} tam["agg_linhas"]` linhas; a versão item a item, **com o mesmo $m$**,
-teria `{python} tam["item_vars"]` variáveis e `{python} tam["item_linhas"]`
-linhas — sete e onze vezes mais. Sem o teto de slots ($m = n$), a versão item a
-item chegaria a `{python} tam["itemn_vars"]` variáveis e
-`{python} tam["itemn_linhas"]` linhas. No conjunto, os `{python} base["pacotes"]`
-pacotes viram `{python} resumo["grupos"]` grupos (instância $\times$ classe).
+agregada tem `{python} tam["agg_vars"]` variáveis e `{python} tam["agg_linhas"]`
+linhas; a versão item a item, com o mesmo $m$, teria `{python} tam["item_vars"]`
+variáveis e `{python} tam["item_linhas"]` linhas — sete e onze vezes mais. Sem o
+teto de slots ($m = n$), a versão item a item chegaria a
+`{python} tam["itemn_vars"]` variáveis e `{python} tam["itemn_linhas"]` linhas.
+No conjunto, os `{python} base["pacotes"]` pacotes viram
+`{python} resumo["grupos"]` grupos (instância $\times$ classe).

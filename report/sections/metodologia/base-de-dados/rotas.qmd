@@ -50,14 +50,14 @@ distribuição (`City_61`) e `{python} rot["destinos"]` são destinos; todas as
 viagens consideradas aqui são diretas, do centro a um destino. A topologia da
 rede aparece na @fig-rede. `distance.csv` traz a matriz completa e simétrica —
 `{python} rot["cidades"]` cidades, `{python} rot["pares"]` pares —, desenhada em
-cinza; sobre ela, em preto, estão as `{python} rot["destinos"]` rotas diretas que
-partem do centro de distribuição, com espessura proporcional ao número de pacotes
-(de `{python} rot["pacotes_min"]` a `{python} rot["pacotes_max"]`). As posições
-**não são geográficas**: são a projeção em duas dimensões da própria matriz de
-distâncias, obtida por escalonamento multidimensional clássico, de modo que a
-distância no desenho aproxima a distância entre as cidades. O que a figura mostra
-é a estrutura de _hub_: toda a carga entra e sai por um único nó, e `City_58`, o
-destino mais carregado, é também um dos mais distantes.
+cinza; sobre ela, em preto, estão as `{python} rot["destinos"]` rotas diretas
+que partem do centro de distribuição, com espessura proporcional ao número de
+pacotes (de `{python} rot["pacotes_min"]` a `{python} rot["pacotes_max"]`). As
+posições **não são geográficas**: são a projeção em duas dimensões da própria
+matriz de distâncias, obtida por escalonamento multidimensional clássico, de
+modo que a distância no desenho aproxima a distância entre as cidades. O que a
+figura mostra é a estrutura de _hub_: toda a carga entra e sai por um único nó,
+e `City_58`, o destino mais carregado, é também um dos mais distantes.
 
 ```{python}
 #| echo: false
@@ -95,14 +95,14 @@ plt.tight_layout()
 ```
 
 A consequência agregada do caráter bidimensional aparece na @fig-rotas, que
-compara, rota a rota, os caminhões que a área exigiria com os que o peso exigiria
-se a frota fosse só de veículos de `{python} rot["comprimento_maior"]` m. Com esse
-veículo, o limite por área é o mais apertado em
+compara, rota a rota, os caminhões que a área exigiria com os que o peso
+exigiria se a frota fosse só de veículos de `{python} rot["comprimento_maior"]`
+a. Com esse veículo, o limite por área é o mais apertado em
 **`{python} rot["area_apertada"]` das `{python} rot["destinos"]` rotas**, empata
 em `{python} rot["empate"]` e é mais folgado em apenas
 `{python} rot["peso_apertado"]`; no total, a frota exigiria
-**`{python} rot["caminhoes_area"]` caminhões por área contra
-`{python} rot["caminhoes_peso"]` por peso**. É por isso que a formulação não pode
+`{python} rot["caminhoes_area"]` caminhões por área contra
+`{python} rot["caminhoes_peso"]` por peso. É por isso que a formulação não pode
 ser unidimensional.
 
 ```{python}

@@ -130,8 +130,6 @@ custo é válido mas frouxo — na maior instância (`{python} resumo["maior_id"
 slots nas `{python} resumo["instancias"]` instâncias. Nenhuma instância passa de
 `{python} resumo["maior_G"]` grupos.
 
-
-
 ```{python}
 #| echo: false
 #| output: asis
@@ -169,9 +167,3 @@ for chave, valor in valores.items():
     modelo = modelo.replace(f"@{chave}@", str(valor))
 print(modelo)
 ```
-
-Não há etapa de **rotulagem** de pacotes. Na versão item a item do modelo, a
-ordem dos índices importava — restrições de quebra de simetria davam ao pacote
-$i$ apenas os slots $1..i$ —, e testamos cinco políticas de ordenação. Com o
-agrupamento não existe índice de pacote a escolher: o grupo carrega apenas a
-multiplicidade $n_g$, e a pergunta desaparece.
