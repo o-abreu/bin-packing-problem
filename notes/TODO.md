@@ -167,8 +167,8 @@ do enunciado:
       HTML congelado do Quarto para tabelas de análise (mantido fora das
       leituras de arquivo único). Só a última submissão conta.
 - [ ] Verificar higiene do repositório commitado conforme `AGENTS.md`: sem
-      `output/`, sem `.devenv`, sem `report.quarto_ipynb`, sem `__pycache__`
-      na submissão.
+      `report/main_files/`, sem `.devenv`, sem `report.quarto_ipynb`, sem
+      `__pycache__` na submissão.
 - [ ] Remover referências do DATASETS.md/relatório a candidatos de dataset
       abandonados antes da submissão.
 

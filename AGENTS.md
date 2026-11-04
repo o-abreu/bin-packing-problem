@@ -22,7 +22,6 @@ real freight logistics data).
 | `report/main.qmd` + `report/refs.bib`                             | IEEE-formatted Quarto report/notebook (the deliverable) — `report/` is self-contained                                              |
 | `report/_extensions/ieee/`                                        | Vendored `dfolio/quarto-ieee` journal format extension (must sit next to `main.qmd`)                                               |
 | `data/raw/*.csv`                                                  | Committed dataset files — **keep them tracked, never re-fetch or gitignore**                                                       |
-| `output/`                                                         | Generated render artifacts — ignored by git                                                                                        |
 | `devenv.nix` / `devenv.yaml` / `devenv.lock` / `requirements.txt` | Declarative environment                                                                                                            |
 
 ## Environment rules (NixOS + devenv)
@@ -50,8 +49,14 @@ real freight logistics data).
 ## Rendering
 
 ```bash
-devenv shell -- render-report          # devenv script (report/main.qmd → output/)
+devenv shell -- render-report          # devenv script (report/main.qmd → report/main.pdf)
 ```
+
+There is **one** PDF location: `report/main.pdf`, written next to the source by
+both the script and `:QuartoPreview` in Neovim. Do not pass `--output-dir` —
+Quarto resolves it relative to the *input file*, which is how a second copy
+under `report/output/` used to appear. `report/main.pdf` is tracked in git (it
+is the deliverable); the `report/main_files/` intermediates are ignored.
 
 The venv interpreter (it has `nbclient`/`nbformat`, which quarto's kernel runner
 needs) is pinned by the **patched `quarto` wrapper** defined in `devenv.nix` —
@@ -174,5 +179,5 @@ the render works the same from `devenv shell`, direnv and editors
 
 - Commit environment changes (`devenv.*`, `requirements.txt`) together with the
   code change that requires them.
-- `output/` artifacts, `__pycache__`, `.devenv` state, and Quarto's
-  `report.quarto_ipynb` caches are not committed.
+- `report/main_files/` intermediates, `__pycache__`, `.devenv` state, and
+  Quarto's `report.quarto_ipynb` caches are not committed.

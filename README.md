@@ -69,7 +69,7 @@ montado a partir de arquivos incluídos.
 ```
 report/
 ├── main.qmd                       # front matter + inclusões
-├── refs.bib                       # 23 entradas verificadas (DOI)
+├── refs.bib                       # Referências bibliográficas
 ├── _extensions/ieee/              # formato de periódico vendorizado
 └── sections/
     ├── introducao.qmd             # I. Introdução
@@ -92,8 +92,8 @@ report/
     │       ├── parametros.qmd     #     2) Parâmetros (tabelas III–VI)
     │       ├── variaveis.qmd      #     3) Variáveis de decisão
     │       ├── objetivo.qmd       #     4) Função objetivo
-    │       ├── restricoes.qmd     #     5) Restrições R1–R9
-    │       ├── sumario.qmd        #     6) Sumário do modelo (R1–R10)
+    │       ├── restricoes.qmd     #     5) Restrições R1–R10
+    │       ├── sumario.qmd        #     6) Sumário do modelo
     │       └── complexidade.qmd   #     7) Complexidade computacional
     ├── disponibilidade.qmd        # III. Disponibilidade de dados e código
     ├── declaracao-uso-ia.qmd      # IV. Declaração de uso de IA
@@ -105,11 +105,15 @@ quando aninhados — por isso `metodologia/index.qmd` escreve
 `sections/metodologia/base-de-dados/index.qmd`, e não um caminho relativo a si.
 
 ```sh
-devenv shell -- render-report      # report/main.qmd -> report/output/main.pdf
+devenv shell -- render-report      # report/main.qmd -> report/main.pdf
 ```
 
-O PDF fica em `report/output/` (ignorado pelo git); `report/main.pdf` é a cópia
-publicada.
+O PDF é gerado ao lado da fonte, em `report/main.pdf`, tanto por esse script
+quanto pelo `:QuartoPreview` do Neovim — é o único local do relatório
+renderizado, e ele é versionado (é o entregável). Não passe `--output-dir`: o
+Quarto resolve esse caminho em relação ao arquivo de entrada, o que já produziu
+uma segunda cópia em `report/output/`. Os intermediários `report/main_files/`
+são ignorados pelo git.
 
 **Situação das seções exigidas pelo enunciado (§4):** Introdução ✅ · Modelagem
 Matemática ✅ · Solução via _solvers_ ⬜ (Gurobi e HiGHS já instalados; falta o

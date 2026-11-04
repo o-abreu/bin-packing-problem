@@ -49,11 +49,14 @@ in {
     ];
   };
 
-  # report/main.qmd -> output/ (PDF IEEE via pdflatex; quarto 1.6.43 travado).
+  # report/main.qmd -> report/main.pdf (PDF IEEE via pdflatex; quarto 1.6.43
+  # travado). Sem `--output-dir`: o Quarto resolve esse caminho em relação ao
+  # arquivo de entrada, e o destino tem de ser o mesmo do `quarto preview` do
+  # Neovim (o PDF ao lado da fonte) para existir uma única cópia do relatório.
   scripts.render-report.exec =
     # bash
     ''
-      mkdir -p output
-      quarto render report/main.qmd --output-dir output
+      cd "${config.devenv.root}"
+      quarto render report/main.qmd
     '';
 }

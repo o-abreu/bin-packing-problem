@@ -16,9 +16,6 @@ Projeto_PM_BCC_2026.*
 __pycache__/
 *.pyc
 
-# Generated report artifacts
-output/
-
 /.quarto/
 **/*.quarto_ipynb
 
