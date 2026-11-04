@@ -2,18 +2,18 @@
 
 Este trabalho empregou ferramentas de inteligência artificial (IA) generativa
 como **apoio** a atividades de pesquisa, sempre sob supervisão humana e com
-responsabilidade integral dos autores pelo conteúdo final. Esta seção declara quais
-ferramentas foram usadas, como foram configuradas e quais controles existem
-sobre o seu uso.
+responsabilidade integral dos autores pelo conteúdo final. Esta seção declara
+quais ferramentas foram usadas, como foram configuradas e quais controles
+existem sobre o seu uso.
 
 ## Escopo do uso
 
 A IA foi utilizada em: (i) busca, triagem e conferência de literatura
 (identificação de trabalhos, verificação de DOI e de dados bibliográficos); (ii)
 apoio à implementação e à depuração do código de modelagem e de solução
-(PuLP/HiGHS) e dos scripts de tratamento de instâncias; (iii) revisão de
-redação, consistência terminológica e conversão de unidades; e (iv) checagem de
-consistência interna entre texto, tabelas e resultados reportados.
+(PuLP/HiGHS); (iii) revisão de redação, consistência terminológica e conversão
+de unidades; e (iv) checagem de consistência interna entre texto, tabelas e
+resultados reportados.
 
 Não foram produzidos por IA os dados, a instância, os resultados numéricos nem
 as conclusões: toda solução reportada provém de execuções dos solvers sobre os
