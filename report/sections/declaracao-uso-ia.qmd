@@ -2,7 +2,7 @@
 
 Este trabalho empregou ferramentas de inteligência artificial (IA) generativa
 como **apoio** a atividades de pesquisa, sempre sob supervisão humana e com
-responsabilidade integral do autor pelo conteúdo final. Esta seção declara quais
+responsabilidade integral dos autores pelo conteúdo final. Esta seção declara quais
 ferramentas foram usadas, como foram configuradas e quais controles existem
 sobre o seu uso.
 
@@ -82,7 +82,7 @@ bibliográfica entra no texto sem conferência em fonte primária; (iii)
 reconferência de resultados — os números do relatório são lidos das saídas do
 solver, não transcritos de respostas do modelo.
 
-O autor revisou integralmente o texto, o código e os resultados aqui
+Os autores revisaram integralmente o texto, o código e os resultados aqui
 apresentados. Eventuais erros remanescentes são de sua responsabilidade.
 
 [^nixrepo]: Repositório público: <https://github.com/o-abreu/nix-config>.
