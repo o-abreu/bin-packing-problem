@@ -43,6 +43,15 @@ share = tab.div(tab.sum(axis=1), axis=0) * 100
 dias_carga = (tab > 0).sum(axis=1)
 c58 = share.loc["City_58"]
 
+# intervalo real entre a última liberação de um dia e a primeira do dia seguinte
+av_ts = pd.to_datetime(items["Available_Time"])
+lib_dia = av_ts.groupby(dia).agg(["min", "max"])
+ultimo_av_hms = lib_dia["max"].dt.strftime("%H:%M:%S").unique()[0]
+primeiro_av_h = lib_dia["min"].iloc[1:].min().strftime("%H:%M")
+
+# pedidos por hora do dia de liberação
+av_hora_ped = pd.to_datetime(g["Available_Time"].first()).dt.hour.value_counts().sort_index()
+
 ped = {
     "pacotes": ptbr(len(items)),
     "pedidos": ptbr(len(pedidos)),
@@ -77,7 +86,12 @@ ped = {
     "dominante": ptbr(share.max(axis=1).median(), 1),
     "top10_tres": ptbr(int((dias_carga.head(10) == 3).sum())),
     "c58": [ptbr(v) for v in c58],
-    "intervalo_h": ptbr(int((liberacao.index[1] - liberacao.index[0]).days * 24)),
+    "intervalo_h": ptbr(int(((lib_dia["min"].shift(-1) - lib_dia["max"])
+                             .dropna().min()).total_seconds() // 3600)),
+    "ultimo_av_hms": ultimo_av_hms,
+    "primeiro_av_h": primeiro_av_h,
+    "av_hora_23": ptbr(int(av_hora_ped.get(23, 0))),
+    "av_hora_23_pct": ptbr(100 * av_hora_ped.get(23, 0) / len(pedidos), 1),
     "janela_min_h": ptbr(janela_h.min()),
     "janela_max_h": ptbr(janela_h.max()),
     "janela_med_h": ptbr(janela_h.median()),
@@ -202,16 +216,42 @@ reparte-se em `{python} ped["c58"][0]`%, `{python} ped["c58"][1]`% e
 `{python} ped["c58"][2]`%), enquanto os destinos pequenos tendem a concentrar
 tudo num dia só.
 
-Esse resultado tem consequência direta para o modelo: como os dias consecutivos
-de liberação distam **`{python} ped["intervalo_h"]` h**, muito acima de
-$\Delta = 4$ h, um caminhão não consegue misturar pacotes liberados em dias
-diferentes. O recorte rota × dia não fragmenta a instância artificialmente — ele
-reflete a própria janela de consolidação.
+Esse resultado tem consequência direta para o modelo: a última liberação de cada
+dia é sempre às `{python} ped["ultimo_av_hms"]` e a primeira do dia seguinte
+nunca chega antes das `{python} ped["primeiro_av_h"]`, de modo que as
+disponibilidades de dias consecutivos diferem em mais de
+`{python} ped["intervalo_h"]` h — muito acima de $\Delta = 4$ h — e um caminhão
+não consegue misturar pacotes liberados em dias diferentes. O recorte rota × dia
+não fragmenta a instância artificialmente — ele reflete a própria janela de
+consolidação. A @fig-pedidos-horas espalha esses instantes ao longo do dia:
+`{python} ped["av_hora_23_pct"]`% dos pedidos chegam entre 23 h e meia-noite, e
+os demais se espalham das 8 h às 20 h, sem nenhum na madrugada.
+
+```{python}
+#| echo: false
+#| warning: false
+#| label: fig-pedidos-horas
+#| fig-width: 3.3
+#| fig-height: 1.7
+#| fig-cap: 'Instante de liberação dos pedidos de `order_large.csv`: número de pedidos por hora do dia de `Available_Time`. Nenhum pedido chega entre 0 h e 7 h; 305 de 365 chegam entre 23 h e meia-noite (em geral às 23:59:59).'
+
+fig, ax = plt.subplots()
+ax.bar(av_hora_ped.index, av_hora_ped.values, color="0.78",
+       edgecolor="black", linewidth=0.4, width=0.7)
+ax.set_xticks(np.arange(0, 25, 4))
+ax.set_xlim(-0.8, 24.8)
+ax.set_xlabel("hora do dia de liberação (Available_Time)")
+ax.set_ylabel("pedidos")
+for h, n in av_hora_ped.items():
+    ax.annotate(str(n), xy=(h, n), xytext=(0, 2), textcoords="offset points",
+                ha="center", fontsize=5)
+plt.tight_layout()
+```
 
 A janela entre disponibilidade e prazo mede de `{python} ped["janela_min_h"]` a
 `{python} ped["janela_max_h"]` h (mediana de `{python} ped["janela_med_h"]` h),
 mas o trânsito consome parte dela: descontando $t_{\text{viagem}} = d/v$, a
-folga mediana cai para **`{python} ped["folga_med"]` h** e
+folga mediana cai para `{python} ped["folga_med"]` h e
 `{python} ped["folga_curta"]` dos `{python} ped["pacotes"]` itens ficam com
 menos de 4 h. Nesses casos o instante de partida é praticamente forçado, e a
 única liberdade que resta ao modelo é o emparelhamento — é aí que R6–R8 mordem.

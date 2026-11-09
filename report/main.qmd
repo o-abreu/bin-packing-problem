@@ -56,16 +56,15 @@ por extenso) e decidir a ordem de autoria. -->
 #| include: false
 # Importações de todo o relatório, num único lugar: os chunks das seções
 # incluídas compartilham o mesmo kernel, então basta carregá-las uma vez aqui.
-import json
-import time
+from decimal import Decimal, ROUND_HALF_UP
+from matplotlib.collections import LineCollection
 from pathlib import Path
 
+import json
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.collections import LineCollection
-
-from decimal import Decimal, ROUND_HALF_UP
+import time
 
 
 def ptbr(valor, casas=0):
