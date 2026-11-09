@@ -1,0 +1,11 @@
+# Lint do Python do relatório (buffers virtuais do otter.nvim) e de scripts/.
+# Os buffers virtuais do otter se chamam `<arquivo>.qmd.otter.python` e são
+# analisados isoladamente, sem enxergar o kernel Jupyter compartilhado entre os
+# chunks do relatório (ver `report/main.qmd`, chunk `setup-imports`).
+
+[lint.per-file-ignores]
+# O chunk de setup importa para o kernel inteiro: quem usa os nomes são os
+# chunks das seções incluídas.
+"**/main.qmd.otter.python" = ["F401"]
+# Os nomes (pd, np, items, ptbr, ...) são definidos no kernel por main.qmd.
+"**/*.qmd.otter.python" = ["F821"]
