@@ -1,7 +1,7 @@
 ### Frota
 
 A frota tem quatro tipos de caminhão, cada um definido pela área de piso $A_t$,
-pela capacidade de peso $W_t$ e pelo custo $C_t$ por quilômetro — os três
+pela capacidade de peso $W_t$ e pelo custo $c_t$ por quilômetro — os três
 parâmetros que, multiplicados pela distância da rota, dão o custo fixo de cada
 viagem. A tabela a seguir reúne esses valores — vindos de `trucks.csv`,
 transcrito de `src/core/structure.py` do acelerador de origem [@routeopt2022] —
@@ -54,8 +54,8 @@ linhas = [
 print(r"\begin{table*}[!ht] \centering")
 print(r"\begin{tabular}{@{}lrrrrrr@{}}")
 print(r"\toprule")
-print(r"Comprimento & $A_t$ (m$^2$) & $W_t$ (kg) & $C_t$ (US\$/km) & $C_t/A_t$ "
-      r"(US\$/m$^2$) & $C_t/W_t$ (US\$/kg) & $W_t/A_t$ (kg/m$^2$) \\")
+print(r"Comprimento & $A_t$ (m$^2$) & $W_t$ (kg) & $c_t$ (US\$/km) & $c_t/A_t$ "
+      r"(US\$/m$^2$) & $c_t/W_t$ (US\$/kg) & $W_t/A_t$ (kg/m$^2$) \\")
 print(r"\midrule")
 print("\n".join(linhas))
 print(r"\bottomrule")
