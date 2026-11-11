@@ -2,12 +2,18 @@
 
 Guidance for coding agents working in this repository (USP _Programação
 Matemática_ project: a variable-size/cost bin packing model — VSBPP — built on
-real freight logistics data).
+the real-world route-optimization benchmark of `data/raw/`).
+
+**Project state (2026-11):** modeling and preprocessing are closed; the report
+has Introduction, Data, Preprocessing and Mathematical Modeling done. In
+development: the solver-experiments section (metrics harness pending), the
+alternative method, and the conclusion. The live tracker is `project.md`
+(Pending Work) with per-item plans in `work/<slug>/README.md`.
 
 ## Language
 
-- **All repository documentation and commit messages — `notes/TODO.md`,
-  `notes/DATASETS.md`, the deliverable report `report/main.qmd`, and any new
+- **All repository documentation and commit messages — the deliverable report
+  `report/main.qmd`, `project.md`, `work/<slug>/README.md`, and any other
   workspace document — should be written in Brazilian Portuguese (pt-BR).
 - `AGENTS.md` itself is kept in English (agent-facing guidance).
 
@@ -16,12 +22,15 @@ real freight logistics data).
 | Path                                                              | What it is                                                                                                                         |
 | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | `Projeto_PM_BCC_2026.md`                                          | Course brief (generic BPP formulation — the model must extend it). **Local only**: gitignored, not distributed with the repository |
-| `notes/DATASETS.md`                                               | Dataset research; provenance and column-by-column annotations                                                                      |
-| `notes/TODO.md`                                                   | Phased plan — check it before starting work; note what phase a change belongs to                                                   |
-| `notes/EXPERIMENTOS.md`                                           | Measured results, protocol and caveats — read before re-deriving a number                                                          |
+| `notes/`                                                          | **Removed** (Nov 2026): the legacy phased plan, dataset annotations and experiment log. Dataset provenance now lives in the report (§III, `disponibilidade.qmd`); the deleted files remain recoverable from git history |
+| `project.md` + `work/<slug>/README.md`                            | **Source of truth for project progress**: tracker (Goal/Background/Pending Work) and one plan+results file per work item            |
+| `scripts/`                                                        | **Removed** in `62c702f` (Nov 2026) as unused; a solver-metrics harness is planned work (`work/solver-metrics-harness/`) — recreate there rather than resurrecting old references |
 | `report/main.qmd` + `report/refs.bib`                             | IEEE-formatted Quarto report/notebook (the deliverable) — `report/` is self-contained                                              |
 | `report/_extensions/ieee/`                                        | Vendored `dfolio/quarto-ieee` journal format extension (must sit next to `main.qmd`)                                               |
 | `data/raw/*.csv`                                                  | Committed dataset files — **keep them tracked, never re-fetch or gitignore**                                                       |
+| `data/pre-processed/`                                             | Generated instances and groups (`instances.csv`, `groups.csv`, `meta.json`) — versioned, regenerable in ~0.2 s                     |
+| `presentations/`                                                  | Class presentations (untracked so far)                                                                                            |
+| `pyrightconfig.json` / `ruff.toml`                                | Type checking (basedpyright) and lint config                                                                                       |
 | `devenv.nix` / `devenv.yaml` / `devenv.lock` / `requirements.txt` | Declarative environment                                                                                                            |
 
 ## Environment rules (NixOS + devenv)
@@ -77,9 +86,10 @@ the render works the same from `devenv shell`, direnv and editors
   weight capacity and cost per km.
 - **The instance is two-dimensional.** A truck is feasible only if
   $\sum_i a_i x_{ij} \le A_t$ **and** $\sum_i w_i x_{ij} \le W_t$. Never
-  collapse it to 1D without saying so: item density (median 797 kg/m²) exceeds
-  the 16.5 m truck's ratio (671 kg/m²), so **area binds more often than
-  weight**.
+  collapse it to 1D without saying so: package density (median 589 kg/m²,
+  computed from `order_large.csv`) sits just below the 16.5 m truck's ratio
+  (671 kg/m²), and the route-by-route fleet lower bounds give 270 trucks by
+  area vs 226 by weight — so **area binds more often than weight**.
 - **Cost is per km, not per truck and not per kg.** For a fixed lane $(o,d)$ a
   truck of type $t$ costs $c_t \times \mathrm{dist}(o,d)$: a fixed charge per
   bin. The model is a fixed-charge VSBPP, not a tariffed per-kg problem.
@@ -105,8 +115,17 @@ the render works the same from `devenv shell`, direnv and editors
   0.332 to 0.248 \$/m²; $c_t/W_t$ from 0.00069 to 0.00037 \$/kg) — a coherent
   "bigger is cheaper per unit" schedule, unlike the legacy freight table.
 - Item distributions: area 0.64–9.72 m² (median 1.25), weight 46–3,130 kg
-  (median 1,000); **no item exceeds the largest truck**; density median 797
+  (median 1,000); **no item exceeds the largest truck**; density median 589
   kg/m².
+- **Preprocessing decomposition (measured, in `data/pre-processed/meta.json`):**
+  4,635 packages collapse into **239 identical-package groups**; the (route ×
+  day) decomposition yields **111 MILP instances**, of which **44 close by
+  inspection** (no MILP needed) and **0 items are infeasible** by
+  window/weight/area. Largest instance: 198 packages in **11 groups** — no
+  instance exceeds 11 groups.
+- Consolidation windows: median availability window per route is 24 h (max
+  56 h) against $\Delta = 4$ h ⇒ wide consolidation is impossible by
+  construction.
 - `Distance(M)` is in **metres**, despite the column name.
 - The data is a **published sample** "inspired by a real-world scenario" of a
   manufacturing customer — not raw company data; state that in the report.
@@ -116,36 +135,57 @@ the render works the same from `devenv shell`, direnv and editors
   (`omarstat2/supply-chain-logistics-data`) was dropped as primary in 2026-10 —
   its `minimum cost` sits below the implied floor price in 78% of classes
   (median $f/(R\,l)=0.09$), `V444_4` has a `rate` **increasing** with weight,
-  and `PORT09→PORT09`×DTP is 100% GROUND with a different cost rule. See
-  `notes/DATASETS.md`.
+  and `PORT09→PORT09`×DTP is 100% GROUND with a different cost rule (full
+  annotations were in `notes/DATASETS.md`, recoverable from git history).
 
 ## Solver stack
 
-- MILP modeling: **PuLP**. The new instance is a **fixed-charge, two-dimensional
-  VSBPP**: $\min \sum_j \sum_t c_t\,\mathrm{dist}(o,d)\,y_{jt}$ subject to
-  $\sum_i x_{ij}=1$, $\sum_t y_{jt}\le 1$, $x_{ij}\le \sum_t y_{jt}$,
-  $\sum_i a_i x_{ij} \le \sum_t A_t y_{jt}$ and
-  $\sum_i w_i x_{ij} \le \sum_t W_t y_{jt}$ — to be restated in
-  `report/sections/metodologia/modelagem-matematica.qmd`. The freight
-  formulation R1–R6 with the $\max(f, RW)$ epigraph is **legacy** (kept only for
-  the case study).
-- **PuLP in the venv is 4.2.x**: `LpVariable.dicts`, `PULP_CBC_CMD` and
-  `pulp.LpStatus` **no longer exist**. Use
+- MILP modeling: **PuLP**. The official model is the **aggregated
+  fixed-charge, two-dimensional VSBPP (R1–R10)**, restated in
+  `report/sections/metodologia/modelagem-matematica/` (authoritative statement:
+  `sumario.qmd`): the instance is defined over **groups $g$ of identical
+  packages** (same area, weight, availability, deadline) with multiplicity
+  $n_g$; decisions are $z_{gj} \in \{0,\dots,n_g\}$ (how many packages of $g$
+  go in truck $j$), $u_{gj} \in \{0,1\}$ (group used in $j$), $y_{jt} \in
+  \{0,1\}$ (truck type) and $\tau_j \ge 0$ (departure time):
+  $\min \sum_{j,t} C_t\, y_{jt}$ with $C_t = c_t\,\mathrm{dist}(o,d)$, subject
+  to R1 (assignment $\sum_j z_{gj} = n_g$), R2/R3 (area and weight capacity),
+  R4 (one type per truck), R5 (linking), R6 (occupancy), R7–R9 (availability,
+  consolidation window $\Delta$, deadline) and R10 (open trucks occupy a
+  prefix). The item-to-item formulation (binary $x_{ij}$, with the R11
+  package-symmetry cut) is **historical/reference only** — it validated the
+  aggregated objective on small instances; R11 vanished with the item index.
+  The freight formulation R1–R6 with the $\max(f, RW)$ epigraph is **legacy**
+  (kept only for the case study).
+- **Solvers in the venv (verified):** `pulp.listSolvers(onlyAvailable=True)`
+  → `['GUROBI', 'GUROBI_CMD', 'HiGHS']`. **Gurobi 13.0.3** (`pkgs.gurobi` +
+  `gurobipy==13.0.3`) with an academic license in `gurobi.lic` at the repo
+  root — **gitignored**, wired through `GRB_LICENSE_FILE` in `devenv.nix`;
+  without the license Gurobi falls back to the restricted size (2,000
+  vars/rows), insufficient for the instances. **HiGHS** (`highspy`) is also
+  installed directly.
+- **PuLP is 4.2.x**: `LpVariable.dicts`, `PULP_CBC_CMD` and `pulp.LpStatus`
+  **no longer exist**. Use
   `m.add_variable_dicts(name, (idx0, idx1), cat="Binary")` (nested dicts,
-  `x[i][j]`), `stats = m.solve(pulp.HiGHS(msg=False))`, then `stats.objective` /
-  `stats.has_solution`. The only available solver is **HiGHS**
-  (`pulp.listSolvers(onlyAvailable=True) == ['HiGHS']`).
-- **HiGHS** (`highspy`) is also installed directly for scaling experiments.
-- Exact solves are for small instances (≤ ~30 items) for now; scaling is a later
-  TODO phase.
-- **Caution:** the report no longer runs the legacy lane-scoped code — the only
-  executable chunks are the three figures in
-  `report/sections/metodologia/base-de-dados.qmd` (route network, package
-  density, trucks per route), all computed from `data/raw/`. The (lane × svc)
-  scoping and CRF exclusion of the legacy case study are recorded in
-  `notes/TODO.md` Phase 2 and in `notes/DATASETS.md`; the legacy notebook draft
-  is `report/sections/experimento.qmd`, which is **not included** in `main.qmd`.
-  Treat its numbers as pre-decomposition.
+  `x[i][j]`), `stats = m.solve(pulp.HiGHS(msg=False))` (or
+  `pulp.GUROBI(msg=False)`), then `stats.objective` / `stats.has_solution`.
+- The aggregation makes every instance small in *groups* (≤ 11), but hard
+  routes still spike (`City_48`, `City_54`); the pending harness
+  (`work/solver-metrics-harness/`) re-collects that node/time evidence.
+- **`scripts/` is gone** (removed in `62c702f`): the symmetry/parity benchmarks
+  ran from there; their measured findings were logged in `notes/EXPERIMENTOS.md`
+  (deleted — recoverable from git history). Do not treat the old script paths
+  as existing.
+- **Caution:** the report's executable chunks (numbers come from code, never
+  typed) now live in `report/sections/introducao.qmd`,
+  `metodologia/base-de-dados/*` (route network, package density, trucks per
+  route, orders), `metodologia/pre-processamento/*` (normalização, redução,
+  custo) and `metodologia/modelagem-matematica/*` (instance sizes, parameter
+  tables, constraints, complexity), all computed from `data/raw/` +
+  `data/pre-processed/`. The legacy notebook draft
+  `report/sections/experimento.qmd` is **not included** in `main.qmd`; treat
+  its numbers as pre-decomposition. The legacy (lane × svc) scoping and CRF
+  exclusion are recoverable from git history (`notes/DATASETS.md`, deleted).
 
 ## Writing & citations
 
@@ -181,3 +221,8 @@ the render works the same from `devenv shell`, direnv and editors
   code change that requires them.
 - `report/main_files/` intermediates, `__pycache__`, `.devenv` state, and
   Quarto's `report.quarto_ipynb` caches are not committed.
+- **`gurobi.lic` and `gurobi.log` are gitignored** — never commit the license
+  file.
+- `project.md`, `work/` (and `.asta/` run outputs, when present) are the
+  research workspace: research-workflow commits may touch them, but commits
+  stay inside those paths — never mix them with report or code changes.

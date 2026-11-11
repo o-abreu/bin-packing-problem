@@ -8,10 +8,10 @@ inteira mista e por um método alternativo.
 > **Estado.** Modelagem e pré-processamento fechados; o relatório já traz
 > introdução, base de dados, pré-processamento, formulação e declaração de uso
 > de IA. A seção de experimentos (solvers) está em desenvolvimento — o rascunho
-> legado é `report/sections/experimento.qmd`, ainda não incluído no documento. O
-> plano por fases está em [`notes/TODO.md`](./notes/TODO.md) e **tudo o que já
-> foi medido** está em [`notes/EXPERIMENTOS.md`](./notes/EXPERIMENTOS.md) — leia
-> antes de refazer qualquer número.
+> legado é `report/sections/experimento.qmd`, ainda não incluído no documento.
+> **O andamento do projeto é acompanhado em [`project.md`](./project.md) — fonte
+> da verdade sobre o que está feito e o que pende** —, com um plano e resultados
+> por unidade de trabalho em `work/<slug>/README.md`.
 
 ## O problema
 
@@ -55,7 +55,8 @@ são dados brutos de empresa.
 
 `Area` e `Weight` vêm escaladas por $10^4$ (divida por 10.000 para m² e kg). Os
 arquivos brutos são **versionados e nunca re-baixados**. Proveniência, licença e
-anotações coluna a coluna: [`notes/DATASETS.md`](./notes/DATASETS.md).
+disponibilidade de dados e código: seção III do relatório
+([`report/sections/disponibilidade.qmd`](./report/sections/disponibilidade.qmd)).
 
 O conjunto de tarifas de frete usado no início do projeto foi **descartado**
 como instância primária (o `minimum cost` fica abaixo do preço implícito em 78%
@@ -129,7 +130,6 @@ Tudo é declarativo, via [devenv](https://devenv.sh) + direnv. **Nada de
 ```sh
 direnv allow                     # ou: devenv shell
 devenv shell -- render-report    # gera o PDF
-devenv shell -- python scripts/aggregated_model.py City_54
 ```
 
 - **Quarto 1.6.43**, fixado pelo input `nixpkgs-quarto`. Um _wrapper_ em
@@ -146,30 +146,24 @@ devenv shell -- python scripts/aggregated_model.py City_54
   `devenv.nix`. Sem a licença, o Gurobi cai na versão restrita (2.000
   variáveis/restrições), insuficiente para as instâncias.
 
-## Scripts
+## Experimentos
 
-Todos rodam no venv do projeto e imprimem tabelas prontas para o relatório.
-
-| script                                  | o que mede                                                                         |
-| --------------------------------------- | ---------------------------------------------------------------------------------- |
-| `scripts/aggregated_model.py`           | modelo agregado R1–R10: objetivo, nós e tempo por instância (`--all`, `--compare`) |
-| `scripts/symmetry_benchmark.py`         | quebra de simetria no modelo item a item (R1–R8 vs R9 vs R10 vs R9–R10)            |
-| `scripts/package_symmetry_benchmark.py` | ordenação de pacotes idênticos (R11), com validação por enumeração exaustiva       |
-
-```sh
-devenv shell -- python scripts/aggregated_model.py City_54 City_48 --compare
-devenv shell -- python scripts/symmetry_benchmark.py
-devenv shell -- python scripts/package_symmetry_benchmark.py
-```
+Os _harnesses_ de benchmark que viviam em `scripts/` foram **removidos** em
+`62c702f` (4/nov/2026) — não há scripts executáveis no repositório neste
+momento. O próximo harness (coleta das quatro métricas de solver por instância,
+nos dois solvers) está planejado como
+[`work/solver-metrics-harness`](./work/solver-metrics-harness/README.md); os
+resultados anteriores permanecem recuperáveis no histórico do git.
 
 ## Estrutura do repositório
 
 ```
 data/raw/           # dataset publicado (MIT) — versionado, nunca re-baixado
 data/pre-processed/ # instâncias e grupos gerados pelo pré-processamento
-notes/              # DATASETS.md, TODO.md, EXPERIMENTOS.md
 report/             # fontes Quarto do artigo (ver acima)
-scripts/            # harnesses de experimento
+project.md          # fonte da verdade sobre o andamento do projeto
+work/               # plano e resultados por unidade de trabalho
+presentations/      # apresentações de aula
 AGENTS.md           # orientação para agentes de código
 devenv.nix/.yaml    # ambiente declarativo; requirements.txt para o venv
 pyrightconfig.json  # checagem de tipos (basedpyright)
@@ -185,5 +179,6 @@ pyrightconfig.json  # checagem de tipos (basedpyright)
 ## Licença
 
 Trabalho acadêmico — direitos reservados aos integrantes do grupo até a entrega.
-O conjunto de dados é MIT; proveniência em
-[`notes/DATASETS.md`](./notes/DATASETS.md).
+O conjunto de dados é MIT; proveniência e disponibilidade na seção III do
+relatório
+([`report/sections/disponibilidade.qmd`](./report/sections/disponibilidade.qmd)).
