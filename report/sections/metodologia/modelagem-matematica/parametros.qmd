@@ -1,9 +1,9 @@
 ### Parâmetros
 
-O _dataset_ de referência nos fornece 20 colunas distintas, das quais **11** são
-incorporadas enquanto parâmetros em nossa modelagem. Esta correlação está
-descrita nas quatro tabelas 3 à 6, sobre as quais devemos fazer algumas
-considerações importantes.
+O conjunto de referência nos fornece 20 colunas distintas, das quais 11 são
+incorporadas como parâmetros em nossa modelagem. Esta correspondência está
+descrita nas quatro tabelas seguintes, sobre as quais faremos algumas
+observações.
 
 <!-- Início das tabelas, aqui descritas em latex cru por razão de incompatibilidade da extensão ieee para renderizar tabelas a partir da sua representação em markdown. -->
 
@@ -19,7 +19,7 @@ h \\ $dl_g$ & prazo dos pacotes do grupo $g$ ($\ge 0$) & \texttt{Deadline} & h
 --- & destino da rota (define a instância) & \texttt{Destination} & --- \\ --- &
 identificador de pedido; não entra no modelo & \texttt{Order\_ID} & --- \\ --- &
 identificador de material; não entra no modelo & \texttt{Material\_ID} & --- \\
---- & classe de perigo; excluída por vacuidade & \texttt{Danger\_Type} & --- \\
+--- & classe de perigo; sem efeito no modelo & \texttt{Danger\_Type} & --- \\
 \bottomrule \end{tabular} \caption{Colunas de \texttt{order\_large.csv} e
 \texttt{order\_small.csv}: 10 colunas, 5 delas viram parâmetros de grupo.}
 \label{param-order} \end{table*}
@@ -54,7 +54,7 @@ caminhão do tipo $t$ ($= c_t\,d$) & US\$ \\ $t_{\text{viagem}}$ & tempo de
 viagem na rota ($= d/v$) & h \\ $\Delta$ & janela de consolidação ($= 4$ h) & h
 \\ $M$ & constante de desativação ($\ge \max_g dl_g - \min_g av_g$) & h \\
 \bottomrule \end{tabular} \caption{Parâmetros derivados e de política, que não
-vêm de coluna do dataset.} \label{param-derived} \end{table*}
+vêm de coluna do conjunto.} \label{param-derived} \end{table*}
 
 <!-- Término das tabelas -->
 
@@ -69,24 +69,24 @@ encurta a formulação em uma ordem de grandeza (ver a análise de complexidade)
 Se todos os pacotes fossem distintos, teríamos $n_g = 1$ para todo $g$ e a
 formulação abaixo coincidiria com a versão item a item.
 
-#### Área enquanto uma grandeza vetorial
+#### Recursos aditivos, não geométricos
 
-Para cada pacote, o dataset fornece `Area` (m²) e `Weight` (kg), não
+Para cada pacote, o conjunto fornece `Area` (m²) e `Weight` (kg), não
 comprimento, largura ou altura. A capacidade é **vetorial** (soma de recursos),
 não um empacotamento geométrico; empilhamento não é representado.
 
 #### Coluna `Danger_Type`
 
-A coluna `Danger_Type` foi removida da modelagem por vacuidade. Esta coluna
-descreve tipos de pacotes (`type_1` e `type_2`) os quais, por considerações de
-segurança, não podem ser transportados juntos. Entretanto estes pacotes não são
-solicitados a um mesmo destino sequer uma vez, então esse encontro jamais
-poderia ocorrer na atual configuração.
+A coluna `Danger_Type` foi removida da modelagem por não ter efeito no modelo.
+A coluna descreve tipos de pacotes (`type_1` e `type_2`) que, por considerações
+de segurança, não podem ser transportados juntos; porém nenhum par de tipos é
+destinado a um mesmo destino sequer uma vez, de modo que esse encontro jamais
+poderia ocorrer na configuração atual.
 
 #### Grandezas de tempo
 
 As grandezas — $av_g$, $dl_g$, $\tau_j$, $\Delta$ e $M$ — são medidas em horas a
-partir de uma origem comum (o menor `Available_Time` da instância): o dataset
+partir de uma origem comum (o menor `Available_Time` da instância): o conjunto
 traz carimbos de data e hora, que precisam virar números para entrar nas
 restrições lineares, e a hora é a unidade coerente com $v$ (km/h).
 
@@ -107,12 +107,12 @@ referência. No `README` do repositório [@routeopt2022], ela aparece como a
 terceira restrição do problema:
 
 > "A diferença de tempo disponível entre os itens disponíveis mais cedo e mais
-> tarde para um mesmo caminhão deve ser definida pelo usuário (exemplo: 4
-> horas)" \[Tradução nossa]
+> tarde para um mesmo caminhão deve ser menor que um limite definido pelo
+> usuário (exemplo: 4 horas)" \[Tradução nossa]
 
 Adotamos o valor sugerido, $\Delta = 4$ h. As restrições 2 e 4 do mesmo `README`
 fundamentam, respectivamente, R7 (o caminhão só parte quando todos os pacotes
 estão disponíveis) e R9 (entrega antes do prazo). Não fosse especificado, um
-caminhão poderia esperar dias para consolidar carga. No mais, o dataset não
+caminhão poderia esperar dias para consolidar carga. No mais, o conjunto não
 precifica espera; por isso o modelo espera até o limite dos prazos (R8–R9), e
 essa ausência é apenas registrada.

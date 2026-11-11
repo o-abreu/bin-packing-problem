@@ -187,6 +187,38 @@ the render works the same from `devenv shell`, direnv and editors
   its numbers as pre-decomposition. The legacy (lane × svc) scoping and CRF
   exclusion are recoverable from git history (`notes/DATASETS.md`, deleted).
 
+## Report prose style (pt-BR)
+
+Decisions fixed in the Nov 2026 style pass; keep new prose consistent with them.
+
+- **Voice.** Impersonal for descriptions and results; first-person plural
+  ("nosso", "faremos") only for deliberate authorial/modeling decisions
+  (abstract, objectives, formulation choices). Never "o nosso dataset" — the
+  dataset head-noun in prose is **"conjunto"** ("o conjunto", "o conjunto de
+  referência"); "dataset" survives only in the section title and code-adjacent
+  contexts.
+- **Emphasis.** Inline numbers are never bolded — the prose carries the
+  emphasis; bold is reserved for term definitions, concepts and list lead-ins
+  (e.g., **classes**, **grupos de pacotes idênticos**).
+- **Em-dash.** At most one per sentence; asides go in parentheses or commas;
+  keep the dash only for true contrast ("não fragmenta a instância
+  artificialmente — ele reflete...").
+- **Stock phrases.** "consequência direta", "mordem/morde" (capacity metaphor),
+  "regra de bolso": at most one occurrence each in the whole report.
+- **Foreign/technical terms.** Italic + gloss on first use only (_bin packing
+  problem_, _slots_ (posições), _first fit decreasing_ (FFD), _gap_ de
+  otimalidade), plain afterwards.
+- **Reserved words.** "teto" = the slot cap ($m$); the VRP bound is "limite
+  superior". Legacy freight vocabulary ("reserva", "tarifa", "pedido
+  solicitado") stays out of the new-model prose.
+- **Numbers and units.** Every inline number comes from a `{python}` chunk via
+  `ptbr()`; hard-coded constants survive only in the abstract and figure
+  captions and must be re-verified against `data/raw/` after any edit. Always
+  attach the unit (dias, h, km) — including after parenthetical medians.
+- **Quoted translations.** Must preserve the source's logical content (e.g.,
+  the Δ constraint is "deve ser **menor que** um limite definido pelo
+  usuário").
+
 ## Writing & citations
 
 - Bibliography is `refs.bib`; entries were verified (e.g., the VSBPP origin

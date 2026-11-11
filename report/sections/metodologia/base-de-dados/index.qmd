@@ -6,9 +6,9 @@ O conjunto é distribuído no Kaggle sob licença MIT [@routeopt2026] e é espel
 dos dados de amostra do acelerador da Microsoft [@routeopt2022]; os arquivos
 usados estão versionados em `data/raw/`:
 
-- `order_large.csv` — **`{python} base["pacotes"]` pacotes** em
+- `order_large.csv` — `{python} base["pacotes"]` pacotes em
   `{python} base["pedidos"]` pedidos, distribuídos em
-  **`{python} base["destinos"]` pares origem–destino**; é a instância principal;
+  `{python} base["destinos"]` pares origem–destino; é a instância principal;
 - `order_small.csv` — `{python} base["small_pacotes"]` pacotes em
   `{python} base["small_pedidos"]` pedidos e
   `{python} base["small_destinos"]` pares origem–destino, usado como caso de

@@ -2,26 +2,26 @@
 
 #### Tamanho do modelo
 
-Com $m \le n$ slots, $G$ grupos e $T$ tipos há $2Gm$ variáveis por grupo (uma
-contagem inteira e um binário de ocupação), $mT$ binárias de tipo e $m$
-contínuas; R1–R10 somam $O(Gm)$ linhas e $O(GmT)$ coeficientes não nulos. Como
+Com $m \le n$ slots, $G$ grupos e $T$ tipos há $2m$ variáveis por grupo ($2Gm$
+no total: uma contagem inteira e um binário de ocupação por slot), $mT$
+binárias de tipo e $m$ contínuas; R1–R10 somam $O(Gm)$ linhas e $O(GmT)$ coeficientes não nulos. Como
 $G \le n$, a formulação nunca é maior que a versão item a item, e é estritamente
 menor assim que houver repetição.
 
 #### Esforço de resolução
 
-A relaxação linear é polinomial no tamanho do modelo; o _branch-and-bound_ não
+A relaxação linear é polinomial no tamanho do modelo; o branch-and-bound não
 é. Cada folha da árvore é uma distribuição de contagens entre os slots, e o
 número de distribuições é
 
 $$\prod_{g \in G} \binom{n_g + m - 1}{m - 1},$$
 
 que coincide com $m^n$ quando todos os $n_g = 1$ e cai rapidamente quando há
-repetição. O problema em si continua NP-difícil — a partição ótima em pacotes
-admite solução exata por programação dinâmica sobre subconjuntos em
-$O(n\,3^n) = 2^{O(n)}$ —, de modo que o ganho do MILP não é assintótico, e sim
-prático: limitante da relaxação, cortes e presolve podam a árvore
-[@martello1990].
+repetição. O problema em si continua NP-difícil — dividir os pacotes de forma ótima
+pode ser feito por programação dinâmica sobre os subconjuntos de itens, ao
+custo de $O(3^n)$ operações —, de modo que o ganho do MILP não é assintótico,
+e sim prático: limitantes inferiores e procedimentos de redução (presolve)
+podam a árvore [@martello1990].
 
 #### Nestas instâncias
 

@@ -36,12 +36,12 @@ pac = {
 
 Os `{python} pac["pacotes"]` pacotes não são `{python} pac["pacotes"]` objetos
 distintos do ponto de vista do modelo. O `Item_ID` é único por construção, mas
-as combinações de (área, peso) são apenas **`{python} pac["tipos"]`**; os dez
-tipos mais frequentes concentram **`{python} pac["top10"]`%** dos itens e o mais
+as combinações de (área, peso) são apenas `{python} pac["tipos"]`; os dez
+tipos mais frequentes concentram `{python} pac["top10"]`% dos itens e o mais
 frequente aparece `{python} pac["freq_max"]` vezes, enquanto
 `{python} pac["singleton"]` tipos ocorrem uma única vez. Se a identificação
 incluir também as janelas de tempo, o número de **classes** (área, peso,
-disponibilidade, prazo) sobe para **`{python} pac["classes"]`** — e, por rota, a
+disponibilidade, prazo) sobe para `{python} pac["classes"]` — e, por rota, a
 variedade é ainda menor: nenhuma rota passa de `{python} pac["classes_rota"]`
 classes. É essa duplicação que permite descrever a instância por **grupos de
 pacotes idênticos**, com uma variável de contagem por grupo em vez de um binário
@@ -74,10 +74,10 @@ plt.tight_layout()
 
 Área e peso crescem juntos, mas longe de proporcionalmente: a correlação é de
 `{python} pac["pearson"]` (Pearson) e `{python} pac["spearman"]` (Spearman), e a
-razão entre eles — a densidade — varia de `{python} pac["dens_min"]` a
+razão entre eles, a densidade, varia de `{python} pac["dens_min"]` a
 `{python} pac["dens_max"]` kg/m², com mediana `{python} pac["dens_med"]`. A
 @fig-pacotes-corr mostra esse leque: sobre uma mesma área, o peso observado pode
-variar por um fator próximo de 10.
+variar por um fator de até quase 30.
 
 ```{python}
 #| echo: false
@@ -106,6 +106,6 @@ plt.tight_layout()
 
 Essa dispersão tem consequência direta no modelo: como a densidade não é
 constante, **não existe um fator fixo** que converta área em peso, e as duas
-restrições de capacidade (R2 e R3) mordem em proporções diferentes conforme a
-rota — é o que justifica tratar a instância como bidimensional em vez de
+restrições de capacidade (R2 e R3) pesam em proporções diferentes conforme a
+rota; é o que justifica tratar a instância como bidimensional em vez de
 escolher uma das duas dimensões como proxy.

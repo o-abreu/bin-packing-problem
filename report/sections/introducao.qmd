@@ -8,7 +8,7 @@ diretas de custo — e uma das mais difíceis, porque o número de planos de
 carregamento cresce de forma combinatória com o número de pacotes. A literatura
 de pesquisa operacional trata essa decisão como um problema de otimização
 combinatória: Dzalbs e Kalganova aplicaram colônia de formigas à consolidação de
-pedidos em reservas de frete de uma tabela tarifária real [@dzalbs2020], e
+pedidos em uma operação de frete com tabela tarifária real [@dzalbs2020], e
 aceleradores industriais de roteirização transformam o mesmo núcleo combinatório
 em produto, resolvendo instâncias de milhares de pedidos [@routeopt2022;
 @routeopt2026]. Sob a terminologia logística, o que esses trabalhos enfrentam é
@@ -36,26 +36,25 @@ caminhões".
 
 A isso soma-se uma dificuldade que o contexto físico impõe e que a literatura
 unidimensional não vê. Um caminhão oferece dois recursos escassos e
-independentes — área de piso e capacidade de peso —, e um carregamento só é
+independentes (área de piso e capacidade de peso), e um carregamento só é
 viável se respeitar ambos; o problema é, portanto, um empacotamento vetorial
 bidimensional [@chekuri2004; @hu2018]. Empacotamento vetorial é estritamente
 mais difícil que o unidimensional: para duas ou mais dimensões não existe
 esquema de aproximação polinomial assintótico, a menos que P = NP
 [@woeginger1997], enquanto em uma dimensão ele existe tanto para o BPP clássico
 [@delavega1981; @karmarkar1982] quanto para o VSBPP [@murgolo1987;
-@epstein2008]. Não há, então, algoritmo com garantia de qualidade para o nosso
-caso: restam a programação inteira mista nas instâncias pequenas e heurísticas
-desenhadas para o domínio nas grandes.
+@epstein2008]. Não há, então, algoritmo com garantia de qualidade para o caso em estudo: restam
+a programação inteira mista nas instâncias pequenas e heurísticas desenhadas
+para o domínio nas grandes.
 
 A programação inteira mista, por seu turno, cobra um preço próprio. Formulações
 de empacotamento são altamente simétricas — compartimentos são intercambiáveis
 —, e a simetria degrada tanto a relaxação linear quanto o _branch-and-bound_
 [@margot2010; @sherali2001]. A resposta consolidada na literatura é quebrar a
 simetria com restrições e técnicas dedicadas [@ostrowski2011; @kaibel2008], cujo
-efeito prático já foi medido no BPP unidimensional [@salem2020]. Boa parte do
-trabalho de modelagem relatado adiante está aí.
+efeito prático já foi medido no BPP unidimensional [@salem2020]. Boa parte do esforço de modelagem relatado adiante concentra-se aí.
 
-A instância que estudamos vem do conjunto público _Large-Scale Route
+Os dados que estudamos vêm do conjunto público _Large-Scale Route
 Optimization_, espelho em licença MIT do acelerador homônimo da Microsoft
 [@routeopt2022; @routeopt2026]. Ele descreve um cliente de manufatura que
 distribui pedidos a partir de um único centro de distribuição para
@@ -82,7 +81,7 @@ Este trabalho persegue, então, quatro objetivos: (i) formular a consolidação 
 carga como um VSBPP bidimensional de custo fixo, declarando e justificando
 conjuntos, parâmetros, variáveis e restrições; (ii) resolvê-lo exatamente em
 instâncias pequenas com dois solvers — um comercial e um de código aberto —,
-reportando status, valor da função objetivo, tempo de processamento e gap de
+reportando status, valor da função objetivo, tempo de processamento e _gap_ de
 otimalidade, e discutindo a diferença de desempenho entre eles; (iii)
 implementar um método de solução alternativo (heurística construtiva e, para as
 instâncias maiores, meta-heurística); e (iv) comparar criticamente as duas

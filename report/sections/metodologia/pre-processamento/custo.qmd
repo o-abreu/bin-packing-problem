@@ -1,6 +1,6 @@
 ### Custo do pré-processamento
 
 O passo completo — leitura, normalização, recorte, agrupamento, filtro de tipos,
-teto de slots e fechamento por inspeção — levou **`{python} resumo["tempo"]` s**
+teto de slots e fechamento por inspeção — levou `{python} resumo["tempo"]` s
 para construir as `{python} resumo["instancias"]` instâncias. O resultado foi
 armazenado em `data/pre-processed/`.

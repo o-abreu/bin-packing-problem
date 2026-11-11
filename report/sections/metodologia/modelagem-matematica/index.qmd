@@ -49,15 +49,15 @@ considerado, mas o custo por distância percorrida é o fator predominante na
 precificação das viagens. Ao limitar o número de paradas a uma, todas as viagens
 tornam-se diretas e o problema de roteamento degenera em um **problema de
 empacotamento com caixas de tamanho variável** (_Variable Sized Bin Packing
-Problem_, VSBPP) [@friesen1986; @murgolo1987; @epstein2008]. Noutras palavras,
-ao resolvermos o VSBPP, estipulamos o teto dos custos que o VRP pode reduzir.
+Problem_, VSBPP) [@friesen1986; @murgolo1987; @epstein2008]. Em outras palavras,
+ao resolver o VSBPP, obtém-se um limite superior para o custo do VRP.
 
 O VSBPP difere do problema clássico de empacotamento em caixas por admitir
-compartimentos de capacidade variável. No caso do nosso dataset, os
+compartimentos de capacidade variável. No caso do conjunto, os
 compartimentos são caminhões com distintas restrições de área e carga. No
 vocabulário do domínio: itens são pacotes; caixas são caminhões de quatro tipos
-(identificados por sua extensão); e a instância é uma rota $(\text{CD} \to d)$
-em viagem direta para `{python} base["destinos"]` destinos distintos.
+(identificados por sua extensão); e as instâncias são rotas $(\text{CD} \to d)$
+em viagem direta, uma para cada um dos `{python} base["destinos"]` destinos.
 
 Como cada pacote consome dois recursos do caminhão — área e carga —, a instância
 é multidimensional [@chekuri2004; @hu2018]. Isso a torna mais difícil que o caso
@@ -76,9 +76,9 @@ não há garantia de aproximação e o esforço exato cresce rápido com o núme
 itens.
 
 Esta seção formaliza um **VSBPP multidimensional** com frota heterogênea,
-instanciado no dataset de roteirização da Microsoft [@routeopt2022;
-@routeopt2026]. A formulação segue os termos padrão de _bin packing_
-[@friesen1986] [@coffman1997] e acrescenta duas generalizações: as caixas vêm em
+instanciado no conjunto de roteirização da Microsoft [@routeopt2022;
+@routeopt2026]. A formulação segue os termos padrão de bin packing
+[@friesen1986; @coffman1997] e acrescenta duas generalizações: as caixas vêm em
 classes com capacidade em duas dimensões e custo fixo por viagem; e cada item
 tem uma janela de tempo (disponibilidade e prazo).
 

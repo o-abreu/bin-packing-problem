@@ -1,5 +1,5 @@
 ---
-title: "Empacotamento de Pacotes em Frotas Heterogêneas: Modelagem VSBPP Bidimensional, Solução Exata e Método Alternativo sobre Dados Reais de Roteirização"
+title: "Empacotamento em Frotas Heterogêneas: Modelagem VSBPP Bidimensional, Solução Exata e Heurística sobre Dados Reais de Roteirização"
 authors:
   - name: "Guilherme de Abreu Barreto"
     orcid: "0009-0007-2701-2537"

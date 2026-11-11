@@ -46,7 +46,7 @@ rot = {
 ```
 
 Os dados cobrem `{python} rot["cidades"]` cidades, das quais uma é o centro de
-distribuição (`City_61`) e `{python} rot["destinos"]` são destinos; todas as
+distribuição (CD; `City_61`) e `{python} rot["destinos"]` são destinos; todas as
 viagens consideradas aqui são diretas, do centro a um destino. A topologia da
 rede aparece na @fig-rede. `distance.csv` traz a matriz completa e simétrica —
 `{python} rot["cidades"]` cidades, `{python} rot["pares"]` pares —, desenhada em
@@ -98,7 +98,7 @@ A consequência agregada do caráter bidimensional aparece na @fig-rotas, que
 compara, rota a rota, os caminhões que a área exigiria com os que o peso
 exigiria se a frota fosse só de veículos de `{python} rot["comprimento_maior"]`
 a. Com esse veículo, o limite por área é o mais apertado em
-**`{python} rot["area_apertada"]` das `{python} rot["destinos"]` rotas**, empata
+`{python} rot["area_apertada"]` das `{python} rot["destinos"]` rotas, empata
 em `{python} rot["empate"]` e é mais folgado em apenas
 `{python} rot["peso_apertado"]`; no total, a frota exigiria
 `{python} rot["caminhoes_area"]` caminhões por área contra

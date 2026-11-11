@@ -47,8 +47,9 @@ auditável: os caminhos abaixo são relativos a
 - `providers/` — provedores de modelos de linguagem.
 
 As tarefas de pesquisa usam o agente `research`, que tem permissão explícita
-apenas para as ferramentas de literatura; as mesmas ferramentas (Asta, Zotero e
-Kaggle) são negadas globalmente para os demais agentes. Essa separação é
+apenas para as ferramentas de pesquisa — Asta, Zotero, Kaggle e o `context7`
+(documentação de bibliotecas); as mesmas ferramentas não são acionadas pelos
+demais agentes nas tarefas deste trabalho. Essa separação é
 deliberada: ela concentra em um único perfil, com escopo restrito, o acesso a
 bases bibliográficas e a execução de comandos de pesquisa.
 

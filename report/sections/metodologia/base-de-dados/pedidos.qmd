@@ -101,11 +101,11 @@ ped = {
 }
 ```
 
-Os `{python} ped["pacotes"]` pacotes chegam em **`{python} ped["pedidos"]`
-pedidos** (`Order_ID`), de tamanhos muito desiguais: de `{python} ped["min"]` a
+Os `{python} ped["pacotes"]` pacotes chegam em `{python} ped["pedidos"]`
+pedidos (`Order_ID`), de tamanhos muito desiguais: de `{python} ped["min"]` a
 `{python} ped["max"]` pacotes, com mediana de `{python} ped["mediana"]` (p10 de
 `{python} ped["p10"]`, p90 de `{python} ped["p90"]`) e peso mediano de
-`{python} ped["peso_med"]` t. Um pedido é, ainda, homogêneo: em
+`{python} ped["peso_med"]` t. Um pedido é, além disso, quase sempre homogêneo: em
 `{python} ped["pct"][1]`% deles há um único tipo (área, peso), em
 `{python} ped["pct"][2]`% dois, em `{python} ped["pct"][3]`% três e em
 `{python} ped["pct"][4]`% quatro. A @fig-pedidos-volume resume as duas coisas —
@@ -141,9 +141,9 @@ plt.tight_layout()
 ```
 
 O tamanho desigual dos pedidos produz uma concentração moderada: o índice de
-Gini dos pacotes por pedido é de **`{python} ped["gini"]`** — os 10% maiores
+Gini dos pacotes por pedido é de `{python} ped["gini"]` (os 10% maiores
 pedidos carregam `{python} ped["top10"]`% dos pacotes, e a metade menor responde
-por `{python} ped["metade"]`% —, como mostra a @fig-pedidos-lorenz. Nada
+por `{python} ped["metade"]`%), como mostra a @fig-pedidos-lorenz. Nada
 parecido com uma distribuição de cauda pesada: há pedidos grandes, mas não há
 alguns poucos pedidos dominando o conjunto.
 
@@ -168,14 +168,14 @@ plt.tight_layout()
 
 No tempo, a oferta é concentrada e a demanda é espalhada. Todos os
 `{python} ped["pacotes"]` pacotes ficam disponíveis em
-**`{python} ped["lib_dias"]` dias** (`{python} ped["lib_periodo"]`), em lotes
-semelhantes — `{python} ped["lotes"][0]`, `{python} ped["lotes"][1]` e
+`{python} ped["lib_dias"]` dias (`{python} ped["lib_periodo"]`, em lotes
+semelhantes: `{python} ped["lotes"][0]`, `{python} ped["lotes"][1]` e
 `{python} ped["lotes"][2]` pacotes, cerca de `{python} ped["tons_dia"]` mil t
-por dia —, enquanto os prazos se distribuem por **`{python} ped["prazo_dias"]`
-dias** (`{python} ped["prazo_periodo"]`), com pico em `{python} ped["pico_dia"]`
+por dia), enquanto os prazos se distribuem por `{python} ped["prazo_dias"]`
+dias (`{python} ped["prazo_periodo"]`), com pico em `{python} ped["pico_dia"]`
 de `{python} ped["pico_mes"]` (`{python} ped["pico_pedidos"]` pedidos). A janela
 entre disponibilidade e prazo tem mediana de `{python} ped["janela_med_d"]` dias
-e máximo de `{python} ped["janela_max_d"]`. A @fig-pedidos-tempo compara as duas
+e máximo de `{python} ped["janela_max_d"]` dias. A @fig-pedidos-tempo compara as duas
 distribuições.
 
 ```{python}
@@ -216,14 +216,13 @@ reparte-se em `{python} ped["c58"][0]`%, `{python} ped["c58"][1]`% e
 `{python} ped["c58"][2]`%), enquanto os destinos pequenos tendem a concentrar
 tudo num dia só.
 
-Esse resultado tem consequência direta para o modelo: a última liberação de cada
-dia é sempre às `{python} ped["ultimo_av_hms"]` e a primeira do dia seguinte
-nunca chega antes das `{python} ped["primeiro_av_h"]`, de modo que as
-disponibilidades de dias consecutivos diferem em mais de
-`{python} ped["intervalo_h"]` h — muito acima de $\Delta = 4$ h — e um caminhão
-não consegue misturar pacotes liberados em dias diferentes. O recorte rota × dia
-não fragmenta a instância artificialmente — ele reflete a própria janela de
-consolidação. A @fig-pedidos-horas espalha esses instantes ao longo do dia:
+O resultado é decisivo para o modelo: a última liberação de cada dia é sempre
+às `{python} ped["ultimo_av_hms"]` e a primeira do dia seguinte nunca chega
+antes das `{python} ped["primeiro_av_h"]`, de modo que as disponibilidades de
+dias consecutivos diferem em mais de `{python} ped["intervalo_h"]` h, muito
+acima de $\Delta = 4$ h, e um caminhão não consegue misturar pacotes liberados
+em dias diferentes. O recorte rota × dia não fragmenta a instância
+artificialmente — ele reflete a própria janela de consolidação. A @fig-pedidos-horas espalha esses instantes ao longo do dia:
 `{python} ped["av_hora_23_pct"]`% dos pedidos chegam entre 23 h e meia-noite, e
 os demais se espalham das 8 h às 20 h, sem nenhum na madrugada.
 
@@ -254,7 +253,7 @@ mas o trânsito consome parte dela: descontando $t_{\text{viagem}} = d/v$, a
 folga mediana cai para `{python} ped["folga_med"]` h e
 `{python} ped["folga_curta"]` dos `{python} ped["pacotes"]` itens ficam com
 menos de 4 h. Nesses casos o instante de partida é praticamente forçado, e a
-única liberdade que resta ao modelo é o emparelhamento — é aí que R6–R8 mordem.
+única liberdade que resta ao modelo é o emparelhamento — é aí que R7–R9 mordem.
 A @fig-pedidos-janela mostra as duas distribuições.
 
 ```{python}

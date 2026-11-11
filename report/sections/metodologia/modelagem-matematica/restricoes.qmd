@@ -13,7 +13,7 @@ $$\sum_{g \in G} a_g\ z_{gj} \ \le\ \sum_{t \in T} A_t\ y_{jt} \quad \forall j \
 $$\sum_{g \in G} w_g\ z_{gj} \ \le\ \sum_{t \in T} W_t\ y_{jt} \quad \forall j \in J \tag{R3}$$
 
 As duas capacidades (R2 e R3) valem **simultaneamente**: o caminhão só é viável
-se respeita área e peso. Na prática a área morde primeiro — a densidade mediana
+se respeita área e peso. Na prática a área morde primeiro: a densidade mediana
 dos pacotes (`{python} pac["dens_med"]` kg/m²) fica abaixo da razão do caminhão
 de `{python} frota["dens_165_tipo"]` m (`{python} frota["dens_165"]` kg/m²), mas
 a cauda da distribuição passa por cima dela.
@@ -64,11 +64,6 @@ $$\max_{g \in S_j} av_g - \min_{g \in S_j} av_g \le \Delta
 A escolha canônica é $\tau_j = \max_g av_g$: o caminhão parte assim que o último
 pacote fica pronto, o que maximiza a folga de prazo.
 
-<!-- **Auditoria.** A correspondência com o prazo é verificada duas vezes — por R8 no -->
-<!-- modelo e, na saída, por um recálculo independente de partida, chegada e folga -->
-<!-- por caminhão. Na solução heurística com $\Delta = 4$ h, os 311 caminhões -->
-<!-- auditados tiveram **zero violações** e folga mediana de 29,8 h (mínima 0,8 h). -->
-
 #### Quebra de simetria
 
 $$\sum_{t \in T} y_{jt} \ \ge\ \sum_{t \in T} y_{j+1,t}
@@ -84,7 +79,7 @@ sendo exatamente os últimos.
 
 O que R10 **não** faz é fixar qual caminhão aberto é qual: com $o$ caminhões
 abertos, suas $o!$ permutações continuam produzindo soluções distintas de mesmo
-custo, que o _branch-and-bound_ não consegue distinguir [@margot2010;
+custo, que o branch-and-bound não consegue distinguir [@margot2010;
 @ostrowski2011]. A simetria entre pacotes idênticos, por outro lado, já não
 existe: como não há um binário por cópia, mas apenas a contagem $z_{gj}$, não há
 identidades para permutar.
