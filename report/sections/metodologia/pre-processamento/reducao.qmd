@@ -12,11 +12,13 @@ O terceiro bloco aplica os cortes que preservam o ótimo:
   itens em ordem decrescente de área, cada um posto na primeira caixa aberta
   que o comporta (área, peso e janela). Cada caminhão dessa construção paga o tipo
   mais barato que o comporta, de modo que
-  $\mathrm{UB} = \sum_b \min\{c_t : A_t \ge a_b,\ W_t \ge w_b\}\, d$, somado
-  sobre os caminhões $b$; o número de caminhões usados fica registrado como
-  diagnóstico, nunca como teto — usá-lo seria **inválido**, porque o ótimo pode
-  usar mais caminhões menores e sair mais barato, enquanto o teto de custo é
-  seguro, embora frouxo.
+  $$
+  \mathrm{UB} = \sum_b \min\{c_t : A_t \ge a_b,\ W_t \ge w_b\}\, d,
+  $$
+  somado sobre os caminhões $b$; o número de caminhões usados fica registrado 
+  como diagnóstico, nunca como teto — usá-lo seria **inválido**, porque o ótimo
+  pode usar mais caminhões menores e sair mais barato, enquanto o teto de custo
+  é seguro, embora frouxo.
 - **Fechamento por inspeção.** Quando a carga inteira cabe num caminhão e a
   janela permite, o ótimo é o custo desse caminhão e não há MILP
   (_mixed integer linear programming_, programação linear inteira mista) a

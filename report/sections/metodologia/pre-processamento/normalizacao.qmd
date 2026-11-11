@@ -4,8 +4,11 @@ As colunas `Area` e `Weight` vêm escaladas por $10^4$ e precisam virar m² e kg
 as distâncias, de metros para km. Os carimbos `Available_Time` e `Deadline` são
 lidos como datas e convertidos em horas contadas a partir da menor
 disponibilidade da instância, o que mantém os números pequenos e a constante $M$
-da modelagem no menor valor possível — $M = \max_g dl_g - \min_g av_g +
-t_{\text{viagem}} + \Delta$.
+da modelagem no menor valor possível
+$$
+M = \max_{g \in G} dl_g - \min_{g \in G} av_g + t_{\text{viagem}} + \Delta,
+$$
+onde $G$ é o conjunto dos grupos de pacotes.
 
 ```{python}
 #| echo: false
@@ -105,7 +108,10 @@ resumo = dict(
 O recorte devolve `{python} resumo["instancias"]` instâncias não vazias —
 mediana de `{python} resumo["mediana"]` pacotes, p90 de `{python} resumo["p90"]`
 e máximo de `{python} resumo["maximo"]` —, que é a base dos três portes do plano
-experimental. Nenhum grupo tem $av_g + t_{\text{viagem}} > dl_g$
-(`{python} resumo["inviaveis"]` casos): a triagem de inviabilidade não corta
-instância alguma. O agrupamento comprime as `{python} resumo["pacotes"]` linhas
-de pacotes em `{python} resumo["grupos"]` grupos (instância × classe).
+experimental. Nenhum grupo $g$ (`{python} resumo["inviaveis"]` casos) é tal que 
+$$
+av_g + t_{\text{viagem}} > dl_g.
+$$
+A triagem de inviabilidade não corta instância alguma. O agrupamento comprime 
+as `{python} resumo["pacotes"]` linhas de pacotes em `{python} resumo["grupos"]`
+grupos (instância × classe).
