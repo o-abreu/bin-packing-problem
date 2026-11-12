@@ -20,3 +20,7 @@ inputs:
     inputs:
       nixpkgs:
         follows: nixpkgs
+  presenterm:
+    # master além de 0.16.1 (nixpkgs): o alinhamento por coluna de tabelas
+    # (`| ---: |`) só existe desde 8fd8f534 (2026-04-18); HEAD de 2026-11-07
+    url: github:mfontanini/presenterm/e809175281f666fe561d079d968b5dd7b3dfbdf2

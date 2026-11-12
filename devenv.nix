@@ -5,6 +5,9 @@
   ...
 }: let
   quartoPinned = inputs.nixpkgs-quarto.legacyPackages.${pkgs.system}.quarto;
+  # flake do presenterm: packages.<system>.default (o Cargo.toml do master
+  # ainda reporta "0.16.1"; a featureset é pós-alinhamento)
+  presenterm = inputs.presenterm.packages.${pkgs.system}.default;
   venvPython = "${config.devenv.root}/.devenv/state/venv/bin/python";
   quarto = pkgs.runCommand "quarto-${quartoPinned.version}-venv" {} ''
     mkdir -p $out/bin
@@ -27,6 +30,7 @@ in {
   packages = with pkgs; [
     git
     gurobi
+    presenterm
     quarto
     (texlive.withPackages (ps:
       with ps; [
