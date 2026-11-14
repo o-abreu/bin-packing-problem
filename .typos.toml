@@ -1,0 +1,77 @@
+# typos não tem locale pt-BR (só variantes de inglês: en/en-us/en-gb/...);
+# num repo de prosa pt-BR, as palavras portuguesas entram como allowlist
+# global — inclusive as que vazam para comentários/citações em arquivos
+# ingleses (ex.: "ser" em trechos citados). Ressalva: isso também mascara
+# um erro inglês real ("set" digitado "ser").
+[default]
+locale = "en"
+
+[files]
+extend-exclude = [
+  "report/_extensions", # IEEEtran vendido: typos upstream e abreviações (Commun, Comput)
+]
+
+[default.extend-words]
+# pt-BR geral
+Exata = "Exata"
+Instituto = "Instituto"
+Tema = "Tema"
+Itens = "Itens"
+atual = "atual"
+candidatas = "candidatas"
+classe = "classe"
+Classe = "Classe"
+cliente = "cliente"
+comercial = "comercial"
+comandos = "comandos"
+computacional = "computacional"
+consome = "consome"
+controles = "controles"
+Controles = "Controles"
+converte = "converte"
+correspondente = "correspondente"
+datas = "datas"
+disciplinas = "disciplinas"
+distribuem = "distribuem"
+dito = "dito"
+dominante = "dominante"
+eles = "eles"
+Eles = "Eles"
+erros = "erros"
+excede = "excede"
+experimentais = "experimentais"
+experimento = "experimento"
+experimentos = "experimentos"
+Experimentos = "Experimentos"
+Fase = "Fase"
+independente = "independente"
+limite = "limite"
+longe = "longe"
+mede = "mede"
+momento = "momento"
+nomes = "nomes"
+oficial = "oficial"
+operacional = "operacional"
+parametros = "parametros"
+potencial = "potencial"
+presentes = "presentes"
+programa = "programa"
+resolvendo = "resolvendo"
+responde = "responde"
+semestre = "semestre"
+ser = "ser"
+softwares = "softwares"
+transcrito = "transcrito"
+transito = "transito"
+variante = "variante"
+polinomial = "polinomial"
+vai = "vai"
+Autor = "Autor"
+componente = "componente"
+algoritmos = "algoritmos"
+# abreviações e identificadores legítimos
+SME = "SME"
+FO = "FO"
+Comput = "Comput"
+arange = "arange"
+ois = "ois"
