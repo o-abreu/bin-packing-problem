@@ -11,3 +11,4 @@ pandas-stubs     # type stubs for pandas (basedpyright/LSP; not imported at runt
 pulp             # MILP modeling (bundled CBC backend)
 highspy          # HiGHS solver API (kept for scaling experiments)
 gurobipy==13.0.3 # Gurobi Python API — must match pkgs.gurobi (13.0.3) in devenv.nix
+tqdm
