@@ -32,6 +32,7 @@ in {
     gurobi
     presenterm
     quarto
+    python3Packages.weasyprint # exportação do presenterm (-e) para validar a estrutura do deck
     (texlive.withPackages (ps:
       with ps; [
         scheme-small # base LaTeX toolchain (pdflatex, latexmk...)

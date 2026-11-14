@@ -1,0 +1,8 @@
+# markdownlint para o deck presenterm (presentations/*.md): o formato de
+# slides viola regras de documento por natureza.
+MD001: false   # saltos de nível de heading são válidos em slides
+MD003: false   # atx (`#`) é obrigatório no presenterm; setext nem tem h3/h4
+MD013: false   # linha > 80: tabelas e URLs de slides estouram por natureza
+MD024: false   # títulos repetidos entre slides (ex.: "Características") são normais
+MD025: false   # todo slide começa com h1 — múltiplos h1 são a estrutura do deck
+MD060: false   # alinhamento de pipes na fonte da tabela: ruído em terminal
