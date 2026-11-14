@@ -63,8 +63,8 @@ ped = {
     "peso_med": ptbr(pedidos["peso_t"].median(), 1),
     "pct": {k: ptbr(100 * contagem.get(k, 0) / len(pedidos), 1) for k in (1, 2, 3, 4)},
     "gini": ptbr(gini, 2),
-    "top10": ptbr(100 * pacotes_ord[-max(1, n_ped // 10):].sum() / pacotes_ord.sum()),
-    "metade": ptbr(100 * pacotes_ord[:n_ped // 2].sum() / pacotes_ord.sum()),
+    "top10": ptbr(100 * pacotes_ord[-max(1, n_ped // 10):].sum() / pacotes_ord.sum(), 1),
+    "metade": ptbr(100 * pacotes_ord[:n_ped // 2].sum() / pacotes_ord.sum(), 1),
     "lib_dias": len(liberacao),
     "lib_periodo": (f"{liberacao.index.min().day} a {liberacao.index.max().day} de "
                     f"{MESES[liberacao.index.min().month - 1]} de "
@@ -116,14 +116,17 @@ o volume por pedido e a diversidade de tipos dentro dele.
 #| warning: false
 #| label: fig-pedidos-volume
 #| fig-width: 3.3
-#| fig-height: 1.5
-#| fig-cap: 'Volume e diversidade dos 365 pedidos de `order_large.csv`. Esquerda: número de pacotes por pedido (mediana 10; linha vertical). Direita: percentual de pedidos segundo o número de tipos (área, peso) distintos que contêm — 86,6% são homogêneos.'
+#| fig-height: 2.9
+#| fig-cap: 'Volume e diversidade dos 365 pedidos de `order_large.csv`, em painéis empilhados. Acima: número de pacotes por pedido (mediana 10; linhas verticais na média, 12,7 pacotes, e em ±1 desvio-padrão, 9,9 pacotes). Abaixo: percentual de pedidos segundo o número de tipos (área, peso) distintos que contêm — 86,6% são homogêneos.'
 
-fig, axes = plt.subplots(1, 2)
+fig, axes = plt.subplots(2, 1)
 ax = axes[0]
 ax.hist(pedidos["pacotes"], bins=np.arange(0.5, 40.5, 1), color="0.78",
         edgecolor="black", linewidth=0.3)
 ax.axvline(pedidos["pacotes"].median(), color="black", linewidth=1.0)
+media_t, dp_t = pedidos["pacotes"].mean(), pedidos["pacotes"].std(ddof=1)
+for x, estilo in ((media_t, "-"), (media_t - dp_t, "--"), (media_t + dp_t, "--")):
+    ax.axvline(x, color="black", linewidth=0.6, linestyle=estilo)
 ax.set_xlabel("pacotes por pedido")
 ax.set_ylabel("pedidos")
 
@@ -137,13 +140,14 @@ for k, v in contagem.items():
 ax.set_xlabel("tipos distintos no pedido")
 ax.set_ylabel("% dos pedidos")
 ax.set_xticks(contagem.index)
+ax.set_ylim(0, 100)
 plt.tight_layout()
 ```
 
 O tamanho desigual dos pedidos produz uma concentração moderada: o índice de
 Gini dos pacotes por pedido é de `{python} ped["gini"]` (os 10% maiores
-pedidos carregam `{python} ped["top10"]`% dos pacotes, e a metade menor responde
-por `{python} ped["metade"]`%), como mostra a @fig-pedidos-lorenz. Nada
+pedidos acumulam `{python} ped["top10"]`% dos pacotes, enquanto a menor
+metade concentra `{python} ped["metade"]`%), como mostra a @fig-pedidos-lorenz. Nada
 parecido com uma distribuição de cauda pesada: há pedidos grandes, mas não há
 alguns poucos pedidos dominando o conjunto.
 
@@ -159,7 +163,10 @@ fig, ax = plt.subplots()
 ax.plot([0, 1], [0, 1], linestyle="--", color="black", linewidth=0.6)
 ax.plot(frac, acum, color="black", linewidth=1.0)
 ax.fill_between(frac, acum, frac, color="0.85", linewidth=0)
-ax.text(0.52, 0.22, f"Gini = {gini:.2f}".replace(".", ","), fontsize=6)
+# rótulo no quadrante inferior direito, afastado da curva (a 35% da altura dela)
+x_gini = 0.72
+ax.text(x_gini, np.interp(x_gini, frac, acum) * 0.35,
+        f"Gini = {gini:.2f}".replace(".", ","), fontsize=6)
 ax.set_xlabel("fração acumulada dos pedidos (do menor ao maior)")
 ax.set_ylabel("fração acumulada dos pacotes")
 ax.set_aspect("equal")

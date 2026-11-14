@@ -94,6 +94,53 @@ ax.margins(0.03)
 plt.tight_layout()
 ```
 
+```{python}
+#| echo: false
+#| output: asis
+#| label: tbl-concentracao
+#| tbl-cap: "Concentração da demanda entre as rotas: participação acumulada das seis rotas de maior demanda e quantidade de rotas necessária para acumular 90% da demanda, medidas em pacotes, peso e área; Gini da demanda entre rotas na grandeza correspondente."
+# Concentração da demanda entre as rotas, medida em três grandezas: participação
+# das seis rotas de maior demanda, quantidade de rotas que acumula 90% e Gini da
+# demanda entre rotas. Emitida como LaTeX cru pelos mesmos motivos da tabela da
+# frota (a extensão ieee não renderiza tabelas em markdown).
+demanda = {
+    "Pacotes": items["Destination"].value_counts().astype(float),
+    "Peso (t)": items.groupby("Destination")["weight_kg"].sum() / 1e3,
+    "Área (m$^2$)": items.groupby("Destination")["area_m2"].sum(),
+}
+top6s, k90s, linhas = [], [], []
+for nome, dem in demanda.items():
+    ordem = dem.sort_values(ascending=False)
+    acum = ordem.cumsum() / ordem.sum()
+    gini = 1 - 2 * np.trapezoid(
+        np.concatenate([[0.0], np.cumsum(np.sort(ordem.to_numpy())) / ordem.sum()]),
+        np.concatenate([[0.0], np.arange(1, len(ordem) + 1) / len(ordem)]))
+    top6 = 100 * ordem.head(6).sum() / ordem.sum()
+    k90 = int((acum < 0.90).sum()) + 1
+    top6s.append(top6)
+    k90s.append(k90)
+    linhas.append(f"{nome} & {ptbr(top6, 1)}\\% & {k90} & {ptbr(gini, 2)} \\\\")
+
+con = {"top6_min": ptbr(min(top6s), 1), "top6_max": ptbr(max(top6s), 1),
+       "k90_min": min(k90s), "k90_max": max(k90s),
+       "n_rotas": len(demanda["Pacotes"])}
+
+print(r"\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lrrr@{}}")
+print(r"\toprule")
+print(r"Demanda & 6 maiores rotas & Rotas até 90\% & Gini \\")
+print(r"\midrule")
+print("\n".join(linhas))
+print(r"\bottomrule")
+print(r"\end{tabular*}")
+```
+
+A demanda também se concentra entre as rotas, e a @tbl-concentracao mede essa
+concentração em três grandezas: as seis rotas de maior demanda acumulam de
+`{python} con["top6_min"]`% (em pacotes) a `{python} con["top6_max"]`% (em área)
+do total, e são necessárias entre `{python} con["k90_min"]` e
+`{python} con["k90_max"]` das `{python} con["n_rotas"]` rotas para reunir 90%.
+A concentração é real, mas não chega a poucas rotas dominando o conjunto.
+
 A consequência agregada do caráter bidimensional aparece na @fig-rotas, que
 compara, rota a rota, os caminhões que a área exigiria com os que o peso
 exigiria se a frota fosse só de veículos de `{python} rot["comprimento_maior"]`
@@ -110,23 +157,38 @@ ser unidimensional.
 #| warning: false
 #| label: fig-rotas
 #| fig-width: 3.3
-#| fig-height: 2.6
-#| fig-cap: 'Caminhões por rota, se a frota fosse só de veículos de 16,5 m: limite inferior por área ($\lceil \sum_i a_i/A_t \rceil$) contra limite mínimo por peso ($\lceil \sum_i w_i/W_t \rceil$). Acima da diagonal, a área exige mais caminhões que o peso; abaixo, o contrário; sobre ela, os dois limites coincidem.'
+#| fig-height: 2.9
+#| fig-cap: 'Caminhões por rota, se a frota fosse só de veículos de 16,5 m: limite inferior por área ($\lceil \sum_i a_i/A_t \rceil$) contra limite mínimo por peso ($\lceil \sum_i w_i/W_t \rceil$), em eixos log$_2$. A área de cada ponto é proporcional ao número de destinos com o mesmo par de limites — os 61 destinos concentram-se em 22 pares distintos, e 18 deles exigem um único caminhão. Acima da diagonal, a área exige mais caminhões que o peso; abaixo, o contrário; sobre ela, os dois limites coincidem.'
 
-lim = int(routes[["n_area", "n_peso"]].to_numpy().max()) + 2
+lim_x = int(routes["n_peso"].max()) * 1.4
+lim_y = int(routes["n_area"].max()) * 1.3
+pares = routes.groupby([routes["n_peso"].astype(int),
+                        routes["n_area"].astype(int)]).size()
+
 fig, ax = plt.subplots()
-ax.plot([0, lim], [0, lim], color="black", linewidth=0.6)
-ax.scatter(routes["n_peso"], routes["n_area"], s=12, facecolor="white",
-           edgecolor="black", linewidth=0.5, zorder=3)
-ax.set_xlabel("caminhões por peso")
-ax.set_ylabel("caminhões por área")
-ax.set_xlim(0, lim)
-ax.set_ylim(0, lim)
+ax.plot([0.8, lim_x], [0.8, lim_x], color="black", linewidth=0.6)
+ax.scatter(pares.index.get_level_values(0), pares.index.get_level_values(1),
+           s=25 * pares.to_numpy(),  # área do ponto ∝ nº de destinos
+           facecolor="0.80", edgecolor="black", linewidth=0.5, zorder=3)
+for (n_peso, n_area), n in pares.items():
+    if n >= 10:  # rotula apenas os empilhes grandes
+        ax.annotate(str(n), xy=(n_peso, n_area), ha="center", va="center",
+                    fontsize=5.5, zorder=4)
+
+ax.set_xlabel("caminhões por peso (log$_2$)")
+ax.set_ylabel("caminhões por área (log$_2$)")
+ax.set_xscale("log", base=2)
+ax.set_yscale("log", base=2)
+ax.set_xticks([1, 2, 4, 8, 16])
+ax.set_yticks([1, 2, 4, 8, 16, 32])
+ax.minorticks_off()
+ax.set_xlim(0.8, lim_x)
+ax.set_ylim(0.8, lim_y)
 ax.set_aspect("equal")
 
 ax.annotate("City_58", xy=(extremo["n_peso"], extremo["n_area"]),
-            xytext=(10, -14), textcoords="offset points", ha="left",
-            va="top", fontsize=6,
+            xytext=(-30, 0), textcoords="offset points", ha="right",
+            va="center", fontsize=6,
             arrowprops=dict(arrowstyle="-", linewidth=0.5))
 plt.tight_layout()
 ```
