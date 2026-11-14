@@ -33,6 +33,8 @@ in {
     presenterm
     quarto
     python3Packages.weasyprint # exportação do presenterm (-e) para validar a estrutura do deck
+    pandoc # blocos ```latex +render``` do deck (LaTeX → código typst)
+    typst # motor final da renderização LaTeX do presenterm (typst → imagem)
     (texlive.withPackages (ps:
       with ps; [
         scheme-small # base LaTeX toolchain (pdflatex, latexmk...)

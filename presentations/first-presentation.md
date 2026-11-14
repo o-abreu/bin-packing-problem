@@ -94,7 +94,7 @@ Pacotes
 
 <!-- column: 0 -->
 
-**4.365** unidades, em um total de **235** classes distintas.
+**4.635** unidades, em um total de **235** classes distintas.
 
 <!-- pause -->
 

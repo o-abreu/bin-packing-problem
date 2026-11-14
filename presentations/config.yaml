@@ -1,0 +1,45 @@
+# Configuração do presenterm para o deck deste repositório, usada via
+# `presenterm -c presentations/config.yaml` (a flag substitui — não mescla —
+# a configuração global de ~/.config/presenterm/config.yaml, por isso ela
+# replica aqui as ligações de teclas e opções da configuração global;
+# o tema `stylix` continua sendo resolvido de ~/.config/presenterm/themes/).
+#
+# A exportação usa a proporção da TV de apresentação (HDMI-A-1, 1366×768):
+# o weasyprint desenha cada célula da grade com ≈6,05×12 px (medido:
+# página de 581,25 × 324 pt para 128×36), de modo que 127×36 → página com
+# proporção 1,7800 ≈ 1366/768 = 1,7799 — e ainda cabe a tabela da frota
+# (~120 colunas).
+
+bindings:
+  execute_code:
+  - e
+  next:
+  - ç
+  - k
+  - <right>
+  - <down>
+  - ' '
+  previous:
+  - j
+  - l
+  - <left>
+  - <up>
+  reload:
+  - r
+defaults:
+  theme: stylix
+options:
+  end_slide_shorthand: true
+  implicit_slide_ends: true
+  list_item_newlines: 2
+snippet:
+  exec:
+    enable: true
+  exec_replace:
+    enable: true
+speaker_notes:
+  always_publish: true
+export:
+  dimensions:
+    columns: 132
+    rows: 36
