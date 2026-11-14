@@ -1,11 +1,17 @@
 ### Conjuntos
 
-- $G = \{1, \dots, G\}$: grupos de pacotes idênticos — pacotes com a mesma área,
-  peso, disponibilidade e prazo —, cada grupo com multiplicidade $n_g$; o total
-  de pacotes da instância é $n = \sum_g n_g$;
+- $G = \{1, \dots, |G|\}$: grupos de pacotes idênticos — pacotes com a mesma
+  área, peso, disponibilidade e prazo —, cada grupo com multiplicidade $n_g$; o
+  número de grupos é $|G|$, e o total de pacotes da instância é $n = \sum_g n_g$;
 - $T = \{1, \dots, 4\}$: tipos de caminhão disponíveis;
 - $J = \{1, \dots, m\}$: _slots_ (posições) de caminhão disponíveis, com
   $m \le n$.
+
+Os conjuntos e contagens acima são locais à instância: cada instância (destino,
+dia) tem os seus próprios $G$, $n_g$, $n$ e $m$, e o modelo é resolvido
+uma vez por instância. Em particular, $m \le n$ vale por construção — nunca há
+motivo para abrir mais slots do que pacotes —, e o pré-processamento o estreita
+com o teto de custo (subseção de redução).
 
 A instância é definida **sobre grupos**, e não sobre pacotes. Isso não perde
 nada: pacotes de um mesmo grupo são indistinguíveis para todas as restrições

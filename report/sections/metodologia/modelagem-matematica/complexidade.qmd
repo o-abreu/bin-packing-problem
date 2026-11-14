@@ -2,11 +2,11 @@
 
 #### Tamanho do modelo
 
-Com $m \le n$ slots, $G$ grupos e $T$ tipos há $2m$ variáveis por grupo ($2Gm$
-no total: uma contagem inteira e um binário de ocupação por slot), $mT$
-binárias de tipo e $m$ contínuas; R1–R10 somam $O(Gm)$ linhas e $O(GmT)$ coeficientes não nulos. Como
-$G \le n$, a formulação nunca é maior que a versão item a item, e é estritamente
-menor assim que houver repetição.
+Com $m \le n$ slots, $|G|$ grupos e $T$ tipos há $2m$ variáveis por grupo
+($2|G|m$ no total: uma contagem inteira e um binário de ocupação por slot), $mT$
+binárias de tipo e $m$ contínuas; R1–R10 somam $O(|G|m)$ linhas e
+$O(|G|mT)$ coeficientes não nulos. Como $|G| \le n$, a formulação nunca é maior
+que a versão item a item, e é estritamente menor assim que houver repetição.
 
 #### Esforço de resolução
 
@@ -26,7 +26,7 @@ podam a árvore [@martello1990].
 #### Nestas instâncias
 
 As `{python} tam["inst"]` instâncias vão de `{python} tam["n_min"]` a
-`{python} tam["n_max"]` pacotes ($G$ de `{python} tam["G_min"]` a
+`{python} tam["n_max"]` pacotes ($|G|$ de `{python} tam["G_min"]` a
 `{python} tam["G_max"]`) e o teto de slots de pré-processamento vai de
 `{python} tam["m_min"]` a `{python} tam["m_max"]`. Na maior delas
 (`{python} tam["maior_id"]`, `{python} tam["maior_n"]` pacotes em
