@@ -7,12 +7,6 @@ disponibilidade da instância, o que mantém os números pequenos e a constante 
 da modelagem no menor valor possível — $M = \max_g dl_g - \min_g av_g +
 t_{\text{viagem}} + \Delta$.
 
-O primeiro bloco carrega as três tabelas já usadas na análise exploratória,
-converte as unidades e prepara a chave de instância (destino, data de
-disponibilidade). Ele também decide se o resultado anterior pode ser
-reaproveitado: o cache vale enquanto `data/pre-processed/` for mais novo que
-`order_large.csv`, `distance.csv` e `trucks.csv`.
-
 ```{python}
 #| echo: false
 #| label: pp-normalizacao
@@ -46,11 +40,10 @@ do_cache = (caminho_inst.exists() and caminho_grupos.exists()
             >= max(p.stat().st_mtime for p in brutos))
 ```
 
-O segundo bloco percorre as combinações (destino, dia de disponibilidade) e,
-para cada uma, faz três coisas: converte os tempos para horas relativas à origem
-da instância; agrupa os pacotes idênticos — mesma área, peso, disponibilidade e
-prazo — em grupos com multiplicidade $n_g$; e guarda as arrays de cada instância
-para o bloco seguinte. O agrupamento é o que permite ao modelo trabalhar com
+Para cada combinação (destino, dia de disponibilidade), faz-se três coisas:
+converte os tempos para horas relativas à origem da instância; agrupa os pacotes
+idênticos — mesma área, peso, disponibilidade e prazo — em grupos com
+multiplicidade $n_g$. O agrupamento é o que permite ao modelo trabalhar com
 contagens em vez de um binário por pacote.
 
 ```{python}
