@@ -8,8 +8,9 @@ O terceiro bloco aplica os cortes que preservam o ótimo:
 - **Teto de slots.** $m$ não precisa ser $n$: como todo caminhão custa ao menos
   $c_{\min} d$, uma solução factível de custo $\mathrm{UB}$ limita
   $m \le \lfloor \mathrm{UB}/(c_{\min}d)\rfloor$. O $\mathrm{UB}$ vem de uma
-  construção gulosa (primeira adaptação em ordem decrescente de área,
-  respeitando área, peso e janela). Cada caminhão dessa construção paga o tipo
+  construção gulosa, o _first fit decreasing_ [@johnson1974; @coffman1997]:
+  itens em ordem decrescente de área, cada um posto na primeira caixa aberta
+  que o comporta (área, peso e janela). Cada caminhão dessa construção paga o tipo
   mais barato que o comporta, de modo que
   $\mathrm{UB} = \sum_b \min\{c_t : A_t \ge a_b,\ W_t \ge w_b\}\, d$, somado
   sobre os caminhões $b$; o número de caminhões usados fica registrado como
@@ -17,7 +18,9 @@ O terceiro bloco aplica os cortes que preservam o ótimo:
   usar mais caminhões menores e sair mais barato, enquanto o teto de custo é
   seguro, embora frouxo.
 - **Fechamento por inspeção.** Quando a carga inteira cabe num caminhão e a
-  janela permite, o ótimo é o custo desse caminhão e não há MILP a resolver.
+  janela permite, o ótimo é o custo desse caminhão e não há MILP
+  (_mixed integer linear programming_, programação linear inteira mista) a
+  resolver.
 
 O bloco grava `instances.csv` (uma linha por instância, com os parâmetros do
 modelo), `groups.csv` (uma linha por grupo, com $n_g$) e um `meta.json` com o
@@ -44,7 +47,8 @@ if not do_cache:
                      and custo_km[k] <= custo_km[t]}
         tipos = [t for t in cand if t not in dominados] or cand
 
-        # UB de custo: primeira adaptação decrescente em área (só para limitar m)
+        # UB de custo: first fit decreasing em ordem decrescente de área
+        # (só para limitar m)
         maior_area = max(capacidade_area[t] for t in tipos)
         maior_peso = max(capacidade_peso[t] for t in tipos)
         caixas = []

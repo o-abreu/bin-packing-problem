@@ -19,7 +19,8 @@ distribui itens de tamanho $w_i$ em caixas de capacidade $C$, minimizando o
 número de caixas utilizadas. É NP-difícil [@karp1972; @garey1979], de modo que
 não se pode esperar um algoritmo exato polinomial no pior caso. O que a teoria
 oferece são garantias de aproximação — a heurística _first fit decreasing_ (FFD)
-nunca usa mais que $11/9$ do ótimo assintoticamente [@dosa2007] — e limites
+[@johnson1974] nunca usa mais que $11/9$ do ótimo assintoticamente [@dosa2007] —
+e limites
 inferiores apertados, que dão a régua para medir o quanto uma solução factível
 está longe do ótimo [@martello1990]. Em logística, essa régua é o que distingue
 uma política de carregamento defensável de uma simples regra de bolso.

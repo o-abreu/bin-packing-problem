@@ -42,12 +42,13 @@ frota = {
     "caminhao_peso_min": ptbr(trucks["weight_capacity_kg"].min()),
 }
 
+# linhas em ordem crescente de porte: do menor para o maior caminhão
 linhas = [
     f"{ptbr(r.truck_type, 1)} m & {ptbr(r.area_capacity_m2, 2)} & "
     f"{ptbr(r.weight_capacity_kg)} & {ptbr(r.cost_per_km, 2)} & "
     f"{ptbr(r.cost_per_km / r.area_capacity_m2, 3)} & "
     f"{ptbr(r.cost_per_km / r.weight_capacity_kg, 5)} & {ptbr(r.ratio)} \\\\"
-    for r in trucks.itertuples()
+    for r in trucks.sort_values("truck_type").itertuples()
 ]
 
 print(r"\begin{table*}[!ht] \centering")
@@ -62,7 +63,10 @@ print(r"\end{tabular}")
 print(r"\caption{Frota do conjunto \textit{Large-Scale Route Optimization}: capacidade "
       r"de área e de peso, custo por quilômetro e indicadores derivados, calculados a "
       r"partir de \texttt{trucks.csv}, transcrito de \texttt{src/core/structure.py} "
-      r"do acelerador. O comprimento identifica a classe.}"
+      r"do acelerador. Os indicadores $C_t/A_t$ e $C_t/W_t$ dividem o custo por "
+      r"quilômetro pela capacidade: seus valores representam custo por km e por "
+      r"unidade de área (ou de peso), não um preço pela capacidade em si. "
+      r"O comprimento identifica a classe.}"
       r" \label{tab-frota}")
 print(r"\end{table*}")
 ```
