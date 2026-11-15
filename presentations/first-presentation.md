@@ -161,17 +161,7 @@ Pedidos
 
 Agrupamentos de pacotes com os mesmos parâmetros de disponibilidade e prazo.
 
-# Características
-
-- Identificação do pedido
-
-- Identificação dos pacotes contidos no pedido
-
-- Disponibilidade
-
-- Prazo de entrega
-
-Disparidades e comunalidades entre pedidos
+Características dos pedidos
 ---
 
 <!-- column_layout: [2, 1] -->
@@ -184,11 +174,11 @@ Disparidades e comunalidades entre pedidos
 
 <!-- incremental_lists: true -->
 
-- Elevada heterogeneidade no volume de pacotes entre os pedidos
+- Heterogêneos no volume de pacotes
 
 <!-- speaker_note: Distribuição em forma de calda longa com mediana (`10`) abaixo da média e elevado nível de variância (média de `12,7 ± 9,9`). Os `10%` dos pedidos mais volumosos concentram quase `27,5%` dos pacotes, enquanto os 50% dos pedidos menos volumosos juntos concentram `21,6%`. -->
 
-- Elevada homogeneidade dos pacotes de um mesmo pedido
+- Homogêneos nas classes de pacotes
 
 <!-- speaker_note: No máximo `4` variedades por pedido, na esmagadora maioria dos casos (`86.6%`) os pacotes são todos da mesma classe. -->
 
@@ -426,7 +416,7 @@ $\sum_{t \in T} y_{jt} \ge \sum_{t \in T} y_{y + 1, t}\ \forall j \in \{1, \dots
 
 <!-- jump_to_middle -->
 
-SOLUÇÃO EXATA
+EXPERIMENTO: SOLUÇÃO EXATA
 ===
 
 Pré-processamento
@@ -458,10 +448,158 @@ Para cada instância:
 
 # Redução do modelo
 
-Para cada instância:
+Para cada instância, aplica-se
 
-1. **Filtro de tipos:** Admite-se apenas caminhões capazes de carregar o menor pacote disponível.
+- **Filtro de tipos**
 
-1. **Teto de slots:** Utiliza-se a heurística _First Fit Decreasing (FFD)_ para calcular um teto de caminhões a serem utilizados na solução ótima.
+<!-- speaker_note: Admite-se apenas caminhões capazes de carregar o menor pacote disponível. -->
 
-1. **Fechamento por inspeção:** Quando a carga inteira cabe em um único caminhão e a janela de tempo permite, é esta a solução ótima e não há MILP a se resolver.
+- **Teto de slots**
+
+<!-- speaker_note: Utiliza-se a heurística _First Fit Decreasing (FFD)_ para calcular um teto de caminhões a serem utilizados na solução ótima. -->
+
+- **Fechamento por inspeção**
+
+<!-- speaker_note:  Quando a carga inteira cabe em um único caminhão e a janela de tempo permite, é esta a solução ótima e não há MILP a se resolver. -->
+
+Protocolo experimental
+---
+
+<!-- incremental_lists: true -->
+
+- Ambos os solvers recebem o **mesmo modelo** e os **mesmos parâmetros** para execução.
+
+<!-- speaker_note: fazendo uso da função `LpProblem` da biblioteca **PuLP** para geração do modelo -->
+
+- Cada execução (instância × solver) popula a pasta `data/results` com arquivos CSV relativos a solução e as variáveis de decisão a esta associadas.
+
+- Durante execução logs são salvos na pasta `data/results/logs`.
+
+<!-- speaker_note: (não versionada) -->
+
+<!-- jump_to_middle -->
+
+RESULTADOS E DISCUSSÃO
+===
+
+
+Resultados
+---
+
+<!-- pause -->
+
+# Valor ótimo
+
+Os dois solvers devolvem o mesmo valor ótimo dentro de uma margem de erro de 0,01%.
+
+<!-- speaker_note: Ou seja, um centavo para mais ou para menos, o que equivale a margem de tolerância padrão do HiGHS -->
+
+<!-- pause -->
+
+# Variáveis de decisão
+
+Nas 111 instâncias:
+
+- A escolha de caminhões coincide completamente em 70 instâncias
+
+- Divergem apenas na ordenação dos caminhões em 35
+
+- Divergem na composição da frota em 6
+
+Desempenho
+---
+
+<!-- column_layout: [3, 2] -->
+
+<!-- column: 0 -->
+
+# Tempo médio de resolução
+
+![image:width:100%](assets/fig-solvers-tempo.png)
+
+<!-- column: 1 -->
+
+<!-- pause -->
+
+# Métricas de benchmark
+
+| Métrica | Gurobi | HiGHS |
+| --- | ---: | ---: |
+| Execuções | 111 | 111 |
+| Tempo total (s) | 4,4 | 2.233,4 |
+| Tempo mediano (s) | 0,00 | 0,03 |
+| Tempo médio (s) | 0,06 | 33,33 |
+| Tempo p90 (s) | 0,06 | 1,00 |
+| Tempo máximo (s) | 1,82 | 2.180,41 |
+| Gap máximo (%) | 2,1×10⁻⁶ | 0,0100 |
+
+
+Análise
+---
+
+<!-- pause -->
+
+```log
+Solving MIP model with:
+   499 rows
+   221 cols (130 binary, 78 integer, 0 implied int., 13 continuous, 0 domain fixed)
+   1604 nonzeros
+   Thread count 8 (of 20 threads). Using 1 max workers. Parallel search off
+```
+
+> Trecho do arquivo `HiGHS__City_5_2022-04-06.log`
+
+Adaptação
+---
+
+<!-- column_layout: [1, 1] -->
+
+<!-- column: 0 -->
+
+# Tempo médio de resolução
+
+![image:width:100%](assets/fig-solvers-paralelo.png)
+
+<!-- column: 1 -->
+
+<!-- pause -->
+
+# Métricas de benchmark
+
+
+| Métrica | Sequencial | Paralelo |
+| --- | ---: | ---: |
+| Execuções | 64/111 | 64 |
+| Tempo total (s) | 50,3 | 60,9 |
+| Tempo mediano (s) | 0,02 | 0,02 |
+| Tempo médio (s) | 0,79 | 0,95 |
+| Tempo p90 (s) | 0,42 | 0,41 |
+| Tempo máximo (s) | 24,03 | 31,06 |
+| Gap máximo (%) | 8,3×10⁻³ | 8,7×10⁻³ |
+
+
+Conclusão
+---
+
+<!-- incremental_lists: true -->
+
+- Gurobi obteve obteve desempenho superior em média.
+
+<!-- speaker_note: Isso, enquanto apresentando mesma solução. -->
+
+- Forçar a paralelização da execução do solver HiGHS não implica em ganho de desempenho.
+
+<!-- speaker_note: E nas instancias mais duras pode ser destrutivo -->
+
+<!-- jump_to_middle -->
+
+OBRIGADO
+===
+
+<!-- pause -->
+
+<!-- column_layout: [3, 2] -->
+
+<!-- column: 0 -->
+
+Documentação e os códigos utilizados podem ser encontrados em [nosso repositório](github.com/o-abreu/bin-packing-problem)
