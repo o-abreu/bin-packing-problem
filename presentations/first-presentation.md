@@ -438,9 +438,13 @@ Separamos os pedidos em função da rota e o dia de disponibilidade em instânci
 
 Para cada instância:
 
-1. Converte-se as _timestamps_ para uma contagem de horas à partir da origem da instância
+1. Converte-se as _timestamps_ para uma contagem de horas
 
-1. Agrupa-se os pacotes idênticos e os ordena em função de da maior área; e peso em caso de empate
+<!-- speaker_note: à partir da origem da instância -->
+
+1. Agrupa-se e ordena-se pacotes idênticos
+
+<!-- speaker_note: em função de da maior área; e peso em caso de empate -->
 
 <!-- column: 1 -->
 
@@ -476,6 +480,8 @@ Protocolo experimental
 - Durante execução logs são salvos na pasta `data/results/logs`.
 
 <!-- speaker_note: (não versionada) -->
+
+<!-- end_slide -->
 
 <!-- jump_to_middle -->
 
@@ -590,6 +596,8 @@ Conclusão
 - Forçar a paralelização da execução do solver HiGHS não implica em ganho de desempenho.
 
 <!-- speaker_note: E nas instancias mais duras pode ser destrutivo -->
+
+<!-- end_slide -->
 
 <!-- jump_to_middle -->
 
