@@ -63,9 +63,10 @@ Solução via _solvers_ ⬜ · Método de Solução Alternativo ⬜ · Conclusã
 
 # Completed Work
 
-_(nenhum item registrado ainda — o pré-projeto (modelagem e pré-processamento)
-foi concluído antes deste arquivo existir; o registro está no histórico do git
-e no `report/main.qmd`)_
+- [highs-parallel-run](work/highs-parallel-run/README.md) (status: done) — terceiro braço do benchmark: HiGHS com `parallel="on"` (108 instâncias ótimas; aborto manual na instância dura com desfecho registrado em JSON); dados em `data/results/` e análise incorporada ao §3 do relatório
+
+_(os itens anteriores à criação deste arquivo — modelagem e pré-processamento —
+estão no histórico do git e no `report/main.qmd`)_
 
 # Pending Work
 
