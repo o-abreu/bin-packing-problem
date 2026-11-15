@@ -1,0 +1,20 @@
+{
+  "evento": "aborto manual do braço HiGHS parallel=\"on\"",
+  "instancia": "City_58_2022-04-06",
+  "tempo_solver_s": 8914.3,
+  "wall_s": 8925,
+  "fonte_tempo": "último linha de log do solve (data/results/logs/HiGHSPAR__City_58_2022-04-06.log, não versionado); wall = nascimento do arquivo de log até o SIGTERM",
+  "gap_pct": 2.81,
+  "arvore_explorada_pct": 48.92,
+  "nos_processados": 13697000,
+  "nos_fila": 4362000,
+  "bound_estatico_ultimo_s": 5709,
+  "nos_no_periodo": 7058000,
+  "fonte_estagnacao": "o limitante dual fica em 151763.558 da linha de log com 3205.4 s até a última (8914.3 s)",
+  "dual_bound": 151763.558,
+  "melhor_solucao": 156149.788,
+  "referencia_sequencial_s": 2180.4,
+  "solucoes_completadas_antes": 108,
+  "pendentes": ["City_37_2022-04-06", "City_58_2022-04-05", "City_58_2022-04-06"],
+  "motivo": "gap dual estático em 2,81% e < 49% da árvore explorada após 2 h 28 min; o braço sequencial fechou a mesma instância em 2.180,4 s"
+}
