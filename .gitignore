@@ -22,3 +22,6 @@ __pycache__/
 # Gurobi
 gurobi.log
 gurobi.lic
+
+# Logs de execução do benchmark de solvers (não versionados)
+data/results/logs/
