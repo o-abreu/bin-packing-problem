@@ -215,6 +215,12 @@ Decisions fixed in the Nov 2026 style pass; keep new prose consistent with them.
   `ptbr()`; hard-coded constants survive only in the abstract and figure
   captions and must be re-verified against `data/raw/` after any edit. Always
   attach the unit (dias, h, km) — including after parenthetical medians.
+- **No references to hidden code.** The final PDF shows prose, tables and
+  figures only: chunks with `include: false` / `echo: false` are invisible to
+  the reader, so the prose must never point at them ("os chunks abaixo", "no
+  chunk de agregação"). Describe the method and the artifacts instead (files,
+  paths, tables); when execution mechanics matter (reproducibility, caching),
+  describe them in terms of files and runs, not of code blocks.
 - **Quoted translations.** Must preserve the source's logical content (e.g.,
   the Δ constraint is "deve ser **menor que** um limite definido pelo
   usuário").
