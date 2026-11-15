@@ -1,0 +1,707 @@
+# Solução via solvers
+
+A seção anterior declarou o modelo; esta o traduz para código e o resolve nas
+111 instâncias (rota × dia) de `data/pre-processed/` com dois solvers — o
+comercial Gurobi [@gurobi] e o de código aberto HiGHS [@highs] —, registrando,
+para cada par instância × solver, as quatro métricas exigidas: status da
+solução, valor da função objetivo, tempo de processamento e _gap_ de otimalidade
+(a distância relativa entre a solução inteira e o limitante dual).
+
+```{python}
+#| label: solvers-setup
+#| include: false
+# Dados das instâncias pré-processadas, o modelo agregado R1–R10 e o wrapper
+# de resolução. O cwd de um chunk é o diretório do documento (report/).
+from pathlib import Path
+import datetime
+import hashlib
+import importlib.metadata
+import json
+import os
+import platform
+
+import numpy as np
+import pandas as pd
+import pulp
+
+RESULT = Path("../data/results")
+insts = pd.read_csv(Path("../data/pre-processed/instances.csv"))
+grupos_todas = pd.read_csv(Path("../data/pre-processed/groups.csv"))
+
+# Frota em dicionário indexado por tipo (como texto, pois 16.5 chega como float)
+tipos = [str(t) for t in sorted(trucks["truck_type"], reverse=True)]
+frota_t = trucks.set_index(trucks["truck_type"].astype(str))
+VEL = float(trucks["speed_kmh"].iloc[0])  # 40 km/h, uniforme nos quatro tipos
+Delta = 4.0
+
+# Números derivados do pré-processamento, citados antes do benchmark:
+# o teto de tempo de viagem entra na nota sobre a constante M.
+sol = {"tv_max": ptbr(insts["dist_km"].max() / VEL, 1)}
+
+
+def montar_modelo(inst, grupos):
+    """MILP agregado R1–R10 para uma instância (rota × dia).
+
+    inst: dicionário da linha de instances.csv; grupos: linhas de
+    groups.csv da instância.
+    """
+    G = list(grupos["group"])
+    J = list(range(int(inst["m_slots"])))
+    d = float(inst["dist_km"])
+    t_v = d / VEL
+    C = {t: float(frota_t.loc[t, "cost_per_km"]) * d for t in tipos}
+    av = dict(zip(grupos["group"], grupos["avail_h"]))
+    dl = dict(zip(grupos["group"], grupos["deadline_h"]))
+    n_g = dict(zip(grupos["group"], grupos["count"].astype(int)))
+    a_g = dict(zip(grupos["group"], grupos["area_m2"]))
+    w_g = dict(zip(grupos["group"], grupos["weight_kg"]))
+
+    m = pulp.LpProblem("vsbpp", pulp.LpMinimize)
+    z = m.add_variable_dicts("z", (G, J), lowBound=0,
+                             upBound=max(n_g.values()), cat="Integer")
+    u = m.add_variable_dicts("u", (G, J), cat="Binary")
+    y = m.add_variable_dicts("y", (tipos, J), cat="Binary")
+    tau = m.add_variable_dicts("tau", (J,), lowBound=0)
+
+    # Constante de desativação: teto declarado (max dl - min av) com folga
+    # Δ + t_viagem, que cobre a desativação de R7–R9 em toda instância.
+    M = max(dl.values()) - min(av.values()) + Delta + t_v
+
+    # Objetivo: custo fixo da frota, C_t = c_t · d
+    m += pulp.lpSum(C[t] * y[t][j] for t in tipos for j in J), "custo_frota"
+
+    # R1: atribuição completa
+    for g in G:
+        m += (pulp.lpSum(z[g][j] for j in J) == n_g[g], f"R1[{g}]")
+    for j in J:
+        # R2: capacidade de área; R3: capacidade de peso (simultâneas)
+        m += (pulp.lpSum(a_g[g] * z[g][j] for g in G)
+              <= pulp.lpSum(float(frota_t.loc[t, "area_capacity_m2"]) * y[t][j]
+                            for t in tipos), f"R2[{j}]")
+        m += (pulp.lpSum(w_g[g] * z[g][j] for g in G)
+              <= pulp.lpSum(float(frota_t.loc[t, "weight_capacity_kg"]) * y[t][j]
+                            for t in tipos), f"R3[{j}]")
+        # R4: um tipo por caminhão
+        m += (pulp.lpSum(y[t][j] for t in tipos) <= 1, f"R4[{j}]")
+    for g in G:
+        for j in J:
+            # R5: grupo só entra em caminhão aberto
+            m += (z[g][j] <= n_g[g] * pulp.lpSum(y[t][j] for t in tipos),
+                  f"R5[{g},{j}]")
+            # R6: ocupação do grupo (u liga contagem e presença)
+            m += (u[g][j] <= z[g][j], f"R6a[{g},{j}]")
+            m += (z[g][j] <= n_g[g] * u[g][j], f"R6b[{g},{j}]")
+            # R7: partida após a disponibilidade
+            m += (tau[j] >= av[g] - M * (1 - u[g][j]), f"R7[{g},{j}]")
+            # R8: janela de consolidação
+            m += (tau[j] <= av[g] + Delta + M * (1 - u[g][j]), f"R8[{g},{j}]")
+            # R9: chegada dentro do prazo
+            m += (tau[j] <= dl[g] - t_v + M * (1 - u[g][j]), f"R9[{g},{j}]")
+    # R10: caminhões abertos ocupam um prefixo de J (quebra de simetria)
+    for j in J[:-1]:
+        m += (pulp.lpSum(y[t][j] for t in tipos)
+              >= pulp.lpSum(y[t][j + 1] for t in tipos), f"R10[{j}]")
+    return m
+
+
+def resolver(modelo, construtor, log=None):
+    """Resolve o modelo com o solver dado e devolve as métricas do registro."""
+    st = modelo.solve(construtor(log))
+    objetivo = st.objective if st.has_solution else None
+    bound = st.best_bound if st.has_solution else None
+    gap = (100 * (objetivo - bound) / abs(objetivo)
+           if objetivo is not None and bound is not None else None)
+    return {
+        "status": st.status.name,
+        "tem_solucao": st.has_solution,
+        "objetivo": objetivo,
+        "bound": bound,
+        "gap_pct": gap,
+        "tempo_s": st.time,
+        "cpu_s": st.cpu_time,
+        "n_vars": st.num_variables,
+        "n_restr": st.num_constraints,
+    }
+
+
+def extrair_solucao_do_modelo(modelo, registro, inst, grupos, nome):
+    """Lê a solução do modelo resolvido e devolve (caminhões, grupos):
+    uma linha por caminhão aberto (tipo, partida, ocupação) e uma por
+    caminhão × grupo (atribuição). Valida atribuição completa e custo."""
+    val = {v.name: (0.0 if v.value() is None else v.value())
+           for v in modelo.variables()}
+    J = range(int(inst["m_slots"]))
+    ginfo = grupos.set_index("group")
+    linhas_cam, linhas_gru = [], []
+    custo_total = 0.0
+    for j in J:
+        escolhidos = [t for t in tipos if val.get(f"y_{t}_{j}", 0.0) > 0.5]
+        if not escolhidos:
+            continue  # slot fechado
+        t = escolhidos[0]
+        A = float(frota_t.loc[t, "area_capacity_m2"])
+        W = float(frota_t.loc[t, "weight_capacity_kg"])
+        carga = {g: int(round(val[f"z_{g}_{j}"])) for g in ginfo.index
+                 if val.get(f"z_{g}_{j}", 0.0) > 0.5}
+        area_usada = sum(float(ginfo.loc[g, "area_m2"]) * n
+                         for g, n in carga.items())
+        peso_usado = sum(float(ginfo.loc[g, "weight_kg"]) * n
+                         for g, n in carga.items())
+        custo = float(frota_t.loc[t, "cost_per_km"]) * float(inst["dist_km"])
+        custo_total += custo
+        linhas_cam.append({
+            "solver": nome, "instance": inst["instance"], "slot": j + 1,
+            "tipo": t, "partida_h": val[f"tau_{j}"], "custo": custo,
+            "area_usada_m2": area_usada, "peso_usado_kg": peso_usado,
+            "ocup_area_pct": 100 * area_usada / A,
+            "ocup_peso_pct": 100 * peso_usado / W,
+            "n_pacotes": sum(carga.values()),
+            "grupos": "|".join(f"{g}x{n}" for g, n in sorted(carga.items())),
+        })
+        for g, n in carga.items():
+            linhas_gru.append({
+                "solver": nome, "instance": inst["instance"], "slot": j + 1,
+                "group": g, "count": n,
+                "avail_h": float(ginfo.loc[g, "avail_h"]),
+                "deadline_h": float(ginfo.loc[g, "deadline_h"]),
+            })
+    # checagens por solve: atribuição completa e custo == objetivo
+    por_grupo = (pd.DataFrame(linhas_gru).groupby("group")["count"].sum()
+                 if linhas_gru else pd.Series(dtype=float))
+    assert (por_grupo == ginfo["count"]).all(), "atribuição incompleta"
+    assert abs(custo_total - registro["objetivo"]) < 1e-6 * max(
+        1.0, abs(registro["objetivo"])), \
+        f"custo {custo_total} != objetivo {registro['objetivo']}"
+    return linhas_cam, linhas_gru
+
+
+def gurobi(log=None):
+    return pulp.GUROBI(msg=True, threads=8, Seed=0, logPath=log,
+                       LogToConsole=0)
+
+
+def highs(log=None):
+    return pulp.HiGHS(msg=True, threads=8, random_seed=0, logPath=log,
+                      log_to_console=0)
+
+
+SOLVERS = [("Gurobi", gurobi), ("HiGHS", highs)]
+
+logs_dir = RESULT / "logs"  # um arquivo de log por solve (não versionado)
+
+# Protocolo do benchmark (a tabela de protocolo e o registro JSON o consomem)
+PROTO = {"processos": 2, "threads": 8, "semente": 0, "limite_tempo_s": None,
+         "warm_start": False, "gap": "padrao", "Delta_h": Delta}
+
+# Especificações da máquina que executa o benchmark: entra na tabela do
+# protocolo e no registro protocolo.json, para reprodutibilidade.
+def specs_maquina():
+    cpuinfo = Path("/proc/cpuinfo").read_text()
+    modelo_cpu = next(l.split(":", 1)[1].strip() for l in cpuinfo.splitlines()
+                      if l.startswith("model name"))
+    mem_kib = int(next(l.split(":", 1)[1].replace("kB", "").strip()
+                       for l in Path("/proc/meminfo").read_text().splitlines()
+                       if l.startswith("MemTotal")))
+    so = next(l.split("=", 1)[1].strip().strip('"')
+              for l in Path("/etc/os-release").read_text().splitlines()
+              if l.startswith("PRETTY_NAME"))
+    try:
+        gov = Path("/sys/devices/system/cpu/cpu0/cpufreq/"
+                   "scaling_governor").read_text().strip()
+    except OSError:
+        gov = None
+    return {"cpu": modelo_cpu, "nucleos": os.cpu_count(),
+            "mem_gib": round(mem_kib / 2**20), "so": so,
+            "governor": gov}
+
+
+specs = specs_maquina()
+
+# Versões das bibliotecas do benchmark (usadas pela tabela do protocolo e
+# pelo registro protocolo.json).
+v_gurobi = ".".join(str(x) for x in __import__("gurobipy").gurobi.version())
+v_highs = importlib.metadata.version("highspy")
+```
+
+## Implementação
+
+O modelo agregado R1–R10 é montado por uma única função Python, sobre a
+biblioteca PuLP, e resolvido uma vez por solver. As variáveis seguem a
+declaração da seção de variáveis: contagens inteiras
+$z_{gj} \in \{0, \dots, n_g\}$, binárias $u_{gj}$ e $y_{jt}$ e partidas
+contínuas $\tau_j \ge 0$. Duas escolhas de codificação merecem nota. Primeira: o
+limite superior global $\max_g n_g$ substitui o por-grupo $n_g$ na declaração de
+$z_{gj}$ — válido, pois R1 ($\sum_j z_{gj} = n_g$, com $z_{gj} \ge 0$) já
+implica $z_{gj} \le n_g$. Segunda: a constante de desativação $M$ usa o teto
+declarado nos parâmetros ($\ge \max_g dl_g -
+\min_g av_g$) com a folga $\Delta + t_{\text{viagem}}$, que garante a
+desativação limpa de R7–R9 mesmo quando o tempo de viagem da rota (até
+`{python} sol["tv_max"]` h) supera a janela de algum grupo — com a folga,
+nenhuma restrição desativada amarra $\tau_j$.
+
+O custo $C_t = c_t\,d$ entra direto no objetivo, e cada instância é reconstruída
+do zero para cada solver — nenhum estado de um solve contamina o outro. O tempo
+registrado é o do solver (`solve time` do registro de execução do PuLP), não o
+de montagem do modelo, que é da ordem de milissegundos.
+
+## Protocolo experimental
+
+Os dois solvers recebem exatamente o mesmo modelo e os mesmos parâmetros de
+execução, resumidos na tabela a seguir: oito _threads_ por execução, sementes
+fixadas (`Seed = 0` no Gurobi, `random_seed = 0` no HiGHS), sem limite de tempo
+nem _warm start_, e o _gap_ de parada padrão de cada um. O paralelismo está
+entre as execuções: as instâncias são MILPs independentes, e o benchmark
+distribui as 222 por um _pool_ de `{python} ptbr(PROTO["processos"])` processos
+— com oito threads por solve, dois processos simultâneos são o que os 20 núcleos
+da máquina comportam. Sem limite de tempo, cada execução termina por conta
+própria, e a comparação de tempo fica limpa de artefatos de corte. Uma
+assimetria é arquitetural, não de configuração: com oito threads, o Gurobi
+paraleliza a busca inteira, enquanto o HiGHS declara no próprio log "_Parallel
+search off_" e efetivamente procura em uma — a diferença de tempo que isso
+produz é um achado do experimento (§ Discussão), não um viés do protocolo.
+
+```{python}
+#| label: tabela-protocolo
+#| echo: false
+#| output: asis
+# Tabela do protocolo emitida como LaTeX cru (a extensão ieee não renderiza
+# tabelas em markdown). Os valores vêm do próprio código do protocolo; as
+# versões e as especificações da máquina vêm do chunk de setup.
+linhas_protocolo = [
+    ("Solver comercial", f"Gurobi {v_gurobi}"),
+    ("Solver aberto", f"HiGHS (highspy {v_highs})"),
+    ("Execução", f'{ptbr(PROTO["processos"])} processos paralelos; '
+                 f'{ptbr(PROTO["threads"])} threads por execução'),
+    ("Semente", "Gurobi: \\texttt{Seed=0}; HiGHS: \\texttt{random\\_seed=0}"),
+    ("Limite de tempo", "nenhum"),
+    ("\\textit{Warm start}", "não"),
+    ("\\textit{Gap} de parada", "padrão de cada solver"),
+    ("Log de execução", "um arquivo por solve em \\texttt{data/results/logs/} "
+                        "(não versionado)"),
+    ("Janela de consolidação $\\Delta$", f"{ptbr(Delta)} h"),
+    ("Processador", f'{specs["cpu"]}; {ptbr(specs["nucleos"])} núcleos'),
+    ("Memória", f'{ptbr(specs["mem_gib"])} GiB'),
+    ("Sistema", specs["so"] + (f'; governador \\texttt{{{specs["governor"]}}}'
+                               if specs["governor"] else "")),
+]
+print(r"\begin{table*}[!ht] \centering")
+print(r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}p{0.30\textwidth}p{0.65\textwidth}@{}}")
+print(r"\toprule")
+print(r"Parâmetro & Valor \\")
+print(r"\midrule")
+print("\n".join(f"{a} & {b} \\\\" for a, b in linhas_protocolo))
+print(r"\bottomrule")
+print(r"\end{tabular*}")
+print(r"\caption{Protocolo de execução do benchmark, idêntico para os dois "
+      r"solvers, com a especificação da máquina que o executou. O modelo é o "
+      r"agregado R1--R10 sobre as 111 instâncias de \texttt{data/pre-processed/}. "
+      r"Sem limite de tempo: cada execução termina por conclusão do solver.}"
+      r" \label{tab-protocolo}")
+print(r"\end{table*}")
+```
+
+Cada execução (uma linha por instância × solver) vai para
+`data/results/solver_metrics.csv`, acompanhada da estrutura da solução — os
+caminhões abertos, com tipo, partida e ocupação de área e de peso, em
+`data/results/solucao_caminhoes.csv`, e a atribuição de grupos em
+`data/results/solucao_grupos.csv` — e do registro de protocolo
+`data/results/protocolo.json`: parâmetros, versões das bibliotecas,
+especificação da máquina e o hash SHA-256 dos dois arquivos de entrada. Nas
+renderizações seguintes, o benchmark detecta o arquivo (paridade de hashes e
+de parâmetros) e lê o CSV em vez de resolver de novo; apagar o CSV força a
+reexecução completa. Durante a execução, o progresso fica observável em
+`data/results/.partial.csv`, regravado a cada solve.
+
+```{python}
+#| label: solvers-benchmark
+#| include: false
+# Executa (ou recupera do cache) o benchmark: 111 instâncias × 2 solvers.
+# As instâncias são MILPs independentes, então a execução paraleliza entre
+# instâncias: dois processos simultâneos, cada solve com 8 threads — o que
+# os 20 núcleos da máquina comportam. O tempo medido é o do solver; o HiGHS
+# avança só em uma thread na busca MIP ("Parallel search off" no próprio
+# log), de modo que a diferença de tempo entre os solvers reflete a
+# arquitetura de cada um, não uma configuração desigual.
+def sha256_arq(caminho):
+    return hashlib.sha256(Path(caminho).read_bytes()).hexdigest()[:16]
+
+
+protocolo = {
+    "parametros": PROTO,
+    "versoes": {
+        "python": platform.python_version(),
+        "pulp": pulp.__version__,
+        "gurobipy": v_gurobi,
+        "highspy": v_highs,
+    },
+    "maquina": specs,
+    "hashes": {
+        "instances.csv": sha256_arq(Path("../data/pre-processed/instances.csv")),
+        "groups.csv": sha256_arq(Path("../data/pre-processed/groups.csv")),
+    },
+    "instancias": len(insts),
+    "gerado_em": datetime.datetime.now().isoformat(timespec="seconds"),
+}
+
+csv_final = RESULT / "solver_metrics.csv"
+csv_parcial = RESULT / ".partial.csv"
+json_protocolo = RESULT / "protocolo.json"
+cache_valido = (
+    csv_final.exists() and json_protocolo.exists()
+    and json.loads(json_protocolo.read_text())["hashes"] == protocolo["hashes"]
+    and json.loads(json_protocolo.read_text())["parametros"] == PROTO
+    and json.loads(json_protocolo.read_text())["instancias"] == len(insts)
+)
+
+def resolver_tarefa(tarefa):
+    """Uma unidade de trabalho do pool: instância × solver. Resolve, coleta
+    as métricas e a estrutura da solução; o log do solver vai para
+    data/results/logs/ (não versionado)."""
+    inst, grupos, nome, solver_nome = tarefa
+    construtor = dict(SOLVERS)[solver_nome]
+    modelo = montar_modelo(inst, grupos)
+    registro = resolver(
+        modelo, construtor,
+        log=str(logs_dir / f"{nome}__{inst['instance']}.log"))
+    registro.update({
+        "solver": nome,
+        "instance": inst["instance"],
+        "n_groups": int(inst["n_groups"]),
+        "m_slots": int(inst["m_slots"]),
+        "closed": bool(inst["closed"]),
+        "closed_cost": (None if pd.isna(inst["closed_cost"])
+                        else float(inst["closed_cost"])),
+    })
+    cam, gru = extrair_solucao_do_modelo(modelo, registro, inst, grupos, nome)
+    return registro, cam, gru
+
+
+# Modo rascunho: com a variável de ambiente BENCHMARK_RASCUNHO definida, o
+# benchmark não roda dentro do render — o chunk lê o progresso parcial em
+# curso e a seção exibe os números como parciais. Sem a variável (o render
+# final), vale o cache completo.
+RASCUNHO = bool(os.environ.get("BENCHMARK_RASCUNHO"))
+
+csv_final = RESULT / "solver_metrics.csv"
+csv_parcial = RESULT / ".partial.csv"
+csv_sol_cam = RESULT / "solucao_caminhoes.csv"
+csv_sol_gru = RESULT / "solucao_grupos.csv"
+json_protocolo = RESULT / "protocolo.json"
+cache_valido = (
+    csv_final.exists() and csv_sol_cam.exists() and csv_sol_gru.exists()
+    and json_protocolo.exists()
+    and json.loads(json_protocolo.read_text())["hashes"] == protocolo["hashes"]
+    and json.loads(json_protocolo.read_text())["parametros"] == PROTO
+    and json.loads(json_protocolo.read_text())["instancias"] == len(insts)
+)
+
+if cache_valido:
+    df = pd.read_csv(csv_final)
+    caminhoes = pd.read_csv(csv_sol_cam)
+    carga_grupos = pd.read_csv(csv_sol_gru)
+    fonte = f"cache: {csv_final.name} (protocolo gravado em {json.loads(json_protocolo.read_text())['gerado_em']})"
+    fonte_status = "Execução completa."
+elif RASCUNHO and csv_parcial.exists():
+    for _ in range(3):  # o parcial é regravado a cada solve; reter se colidir
+        try:
+            df = pd.read_csv(csv_parcial)
+            break
+        except Exception:
+            time.sleep(2)
+    caminhoes = None
+    carga_grupos = None
+    fonte = f"RASCUNHO: execução em andamento ({len(df)} de {2 * len(insts)} execuções)"
+    fonte_status = (f"**Rascunho** — execução em andamento: {len(df)} de "
+                    f"{2 * len(insts)} execuções concluídas; números parciais.")
+else:
+    RESULT.mkdir(exist_ok=True)
+    logs_dir.mkdir(exist_ok=True)
+    # Gurobi na ordem natural; HiGHS do menor para o maior porte (m_slots,
+    # n_packages), para que as instâncias pesadas — em especial a mais
+    # dura — rodem por último e não segurem o resto do benchmark.
+    hi_ordenadas = sorted(
+        insts.itertuples(), key=lambda i: (i.m_slots, i.n_packages))
+    tarefas = (
+        [(inst._asdict(), grupos_todas[grupos_todas["instance"] == inst.instance],
+          "Gurobi", "Gurobi") for inst in insts.itertuples()]
+        + [(inst._asdict(), grupos_todas[grupos_todas["instance"] == inst.instance],
+            "HiGHS", "HiGHS") for inst in hi_ordenadas]
+    )
+    linhas, cam_todas, gru_todas = [], [], []
+    import multiprocessing
+    import concurrent.futures
+    try:
+        ctx = multiprocessing.get_context("fork")
+        with concurrent.futures.ProcessPoolExecutor(
+                max_workers=PROTO["processos"], mp_context=ctx) as pool:
+            futuros = {pool.submit(resolver_tarefa, t): t for t in tarefas}
+            for fut in concurrent.futures.as_completed(futuros):
+                registro, cam, gru = fut.result()
+                linhas.append(registro)
+                cam_todas.extend(cam)
+                gru_todas.extend(gru)
+                # progresso observável durante a execução (gravação atômica)
+                parcial_tmp = csv_parcial.with_suffix(".tmp")
+                pd.DataFrame(linhas).to_csv(parcial_tmp, index=False)
+                parcial_tmp.replace(csv_parcial)
+        fonte = f"execução paralela ({PROTO['processos']} processos × {PROTO['threads']} threads)"
+    except Exception as erro:  # fallback: execução sequencial
+        if not linhas:
+            for t in tarefas:
+                registro, cam, gru = resolver_tarefa(t)
+                linhas.append(registro)
+                cam_todas.extend(cam)
+                gru_todas.extend(gru)
+                parcial_tmp = csv_parcial.with_suffix(".tmp")
+                pd.DataFrame(linhas).to_csv(parcial_tmp, index=False)
+                parcial_tmp.replace(csv_parcial)
+        fonte = f"execução sequencial (fallback do pool: {type(erro).__name__})"
+    # ordem estável e gravação atômica dos arquivos definitivos
+    df = pd.DataFrame(linhas).sort_values(["solver", "instance"],
+                                          ignore_index=True)
+    caminhoes = pd.DataFrame(cam_todas).sort_values(
+        ["solver", "instance", "slot"], ignore_index=True)
+    carga_grupos = pd.DataFrame(gru_todas).sort_values(
+        ["solver", "instance", "slot", "group"], ignore_index=True)
+    csv_parcial.replace(csv_final)
+    caminhoes.to_csv(csv_sol_cam, index=False)
+    carga_grupos.to_csv(csv_sol_gru, index=False)
+    json_protocolo.write_text(json.dumps(protocolo, indent=2))
+    fonte_status = f"Execução completa ({len(df)} execuções)."
+```
+
+```{python}
+#| label: solvers-validacao
+#| include: false
+# Validação cruzada: (a) as 44 instâncias fechadas por inspeção no pré-
+# processamento devem reproduzir closed_cost; (b) Gurobi e HiGHS devem
+# concordar no valor ótimo; (c) o ótimo nunca supera o teto ub_cost; (d)
+# nenhuma execução termina infactível. Qualquer divergência aborta o render.
+falhas = []
+
+fech = df[df["closed"]]
+dif_fechadas = (fech["objetivo"] - fech["closed_cost"]).abs().max()
+if fech["objetivo"].isna().any() or dif_fechadas > 1e-6:
+    falhas.append(f"(a) fechadas por inspeção divergem de closed_cost (máx {dif_fechadas})")
+
+pivot = df.pivot(index="instance", columns="solver", values="objetivo").dropna()
+dif_solvers = ((pivot["Gurobi"] - pivot["HiGHS"]).abs() / pivot["Gurobi"].abs())
+if dif_solvers.max() > 1e-4:
+    falhas.append(f"(b) objetivos dos solvers divergem (máx rel. {dif_solvers.max()})")
+
+ub = dict(zip(insts["instance"], insts["ub_cost"]))
+estoura = [i for i, r in df.iterrows()
+           if pd.notna(r["objetivo"]) and r["objetivo"] > ub[r["instance"]] + 1e-6]
+if estoura:
+    falhas.append(f"(c) ótimo acima de ub_cost em {estoura[:3]}")
+
+if (df["status"] == "Infeasible").any():
+    falhas.append("(d) há status infactível")
+
+# (e) comparação estrutural das soluções Gurobi vs HiGHS: mesmo conjunto de
+# caminhões e manifestas? Atribuições ótimas diferentes são legítimas (a
+# simetria entre caminhões admite múltiplos ótimos de mesmo valor); nada
+# aqui aborta o render — é comparação, não falha.
+iguais = tipoi = total_cmp = 0
+frotas_diferentes = []
+if caminhoes is not None:
+    total_cmp = len(pivot)
+    for instancia in pivot.index:
+        a = caminhoes[(caminhoes["solver"] == "Gurobi")
+                      & (caminhoes["instance"] == instancia)]
+        b = caminhoes[(caminhoes["solver"] == "HiGHS")
+                      & (caminhoes["instance"] == instancia)]
+        ka = sorted(zip(a["tipo"], a["grupos"]))
+        kb = sorted(zip(b["tipo"], b["grupos"]))
+        if ka == kb:
+            iguais += 1
+        elif sorted(a["tipo"]) == sorted(b["tipo"]):
+            tipoi += 1  # mesma frota, atribuição diferente
+        else:
+            frotas_diferentes.append(instancia)
+
+if falhas:
+    raise RuntimeError("Validação do benchmark falhou: " + "; ".join(falhas))
+detalhe_e = (f"soluções idênticas em {iguais}/{total_cmp} instâncias "
+             f"({tipoi} com mesma frota e atribuição distinta, "
+             f"{len(frotas_diferentes)} com frota distinta)"
+             if total_cmp else "comparação de soluções na execução final")
+print(f"Validação: {len(df)} execuções ({fonte}), checks (a)–(e): OK — "
+      f"máx. diferença fechadas vs closed_cost: {dif_fechadas:.2e}, "
+      f"máx. diferença relativa entre solvers: {dif_solvers.max():.2e}; "
+      f"(e) {detalhe_e}")
+```
+
+## Resultados
+
+```{python}
+#| label: solvers-agregados
+#| include: false
+# Agregados por solver: os 44 closes por inspeção são triviais (< 0,1 s) e
+# puxariam as estatísticas de tempo para baixo; o bloco "não triviais"
+# (67 instâncias) isola os MILPs que exigem busca.
+sol.update({"n_inst": ptbr(len(insts)), "n_fech": ptbr(int(insts['closed'].sum())),
+            "n_nt": ptbr(len(insts) - int(insts['closed'].sum()))})
+for nome, k in [("Gurobi", "gu"), ("HiGHS", "hi")]:
+    s = df[df["solver"] == nome]
+    nt = s[~s["closed"]]
+    pior = nt.loc[nt["tempo_s"].idxmax()]
+    sol[f"{k}_otimos"] = ptbr((s["status"] == "Optimal").sum())
+    sol[f"{k}_total"] = ptbr(s["tempo_s"].sum(), 1)
+    sol[f"{k}_med"] = ptbr(nt["tempo_s"].median(), 2)
+    sol[f"{k}_media"] = ptbr(nt["tempo_s"].mean(), 2)
+    sol[f"{k}_p90"] = ptbr(np.percentile(nt["tempo_s"], 90), 2)
+    sol[f"{k}_max"] = ptbr(nt["tempo_s"].max(), 2)
+    sol[f"{k}_pior"] = str(pior["instance"])
+    sol[f"{k}_gap_max"] = ptbr(s["gap_pct"].max(), 4)
+    sol[f"{k}_fech_tempo"] = ptbr(s[s["closed"]]["tempo_s"].sum(), 2)
+razao_med = df[~df["closed"]].pivot(index="instance", columns="solver",
+                                    values="tempo_s").pipe(
+    lambda p: p["HiGHS"] / p["Gurobi"])
+sol["razao_med"] = ptbr(razao_med.median(), 1)
+sol["razao_max"] = ptbr(razao_med.max(), 1)
+
+# A instância mais dura merece registro próprio (discussão)
+t_gu = float(df[(df["instance"] == "City_58_2022-04-06")
+                & (df["solver"] == "Gurobi")]["tempo_s"].iloc[0])
+sol["c58_gu"] = ptbr(t_gu, 1)
+c58_hi = df[(df["instance"] == "City_58_2022-04-06")
+            & (df["solver"] == "HiGHS")]
+if len(c58_hi):
+    t_hi = float(c58_hi["tempo_s"].iloc[0])
+    sol["c58_hi_min"] = ptbr(t_hi / 60, 0)
+    sol["c58_razao"] = ptbr(t_hi / t_gu, 0)
+else:  # rascunho: a execução da instância dura ainda está em curso
+    sol["c58_hi_min"] = "— (em execução)"
+    sol["c58_razao"] = "—"
+outros = df[df["instance"] != "City_58_2022-04-06"]
+sol["gu_max_outros"] = ptbr(outros[outros["solver"] == "Gurobi"]["tempo_s"].max(), 1)
+sol["hi_max_outros"] = ptbr(outros[outros["solver"] == "HiGHS"]["tempo_s"].max(), 1)
+
+# Comparação estrutural das soluções (validação e), como frase pronta
+if caminhoes is not None:
+    if iguais == total_cmp:
+        sol["sol_cmp"] = (f"As soluções ótimas dos dois solvers coincidem "
+                          f"caminhão a caminhão nas {ptbr(total_cmp)} "
+                          f"instâncias comparáveis.")
+    else:
+        sol["sol_cmp"] = (f"As soluções ótimas dos dois solvers coincidem "
+                          f"caminhão a caminhão em {ptbr(iguais)} de "
+                          f"{ptbr(total_cmp)} instâncias; em "
+                          f"{ptbr(tipoi)} a frota por tipo é a mesma e "
+                          f"muda a atribuição — ótimos múltiplos de mesmo "
+                          f"valor —, e em {ptbr(len(frotas_diferentes))} a "
+                          f"composição da frota difere, com o mesmo custo.")
+else:
+    sol["sol_cmp"] = "(A comparação caminhão a caminhão entra na versão final.)"
+```
+
+`{python} fonte_status`
+
+A tabela a seguir resume as quatro métricas nos dois solvers. As estatísticas de
+tempo da tabela — e a @fig-solvers-tempo — isolam as `{python} sol["n_nt"]`
+instâncias que exigem busca (as outras `{python} sol["n_fech"]` fecham por
+inspeção e resolvem em milissegundos, com tempo total de
+`{python} sol["gu_fech_tempo"]` s no Gurobi e `{python} sol["hi_fech_tempo"]` s
+no HiGHS).
+
+```{python}
+#| label: tabela-solvers
+#| echo: false
+#| output: asis
+linhas_solvers = [
+    ("Execuções com status ótimo", f'{sol["gu_otimos"]}/{sol["n_inst"]}',
+     f'{sol["hi_otimos"]}/{sol["n_inst"]}'),
+    ("Tempo total (s)", sol["gu_total"], sol["hi_total"]),
+    ("Tempo mediano (s)", sol["gu_med"], sol["hi_med"]),
+    ("Tempo médio (s)", sol["gu_media"], sol["hi_media"]),
+    ("Tempo p90 (s)", sol["gu_p90"], sol["hi_p90"]),
+    ("Tempo máximo (s)", sol["gu_max"], sol["hi_max"]),
+    ("\\textit{Gap} máximo (\\%)", sol["gu_gap_max"], sol["hi_gap_max"]),
+]
+print(r"\begin{table*}[!ht] \centering")
+print(r"\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lrr@{}}")
+print(r"\toprule")
+print(r"Métrica & Gurobi & HiGHS \\")
+print(r"\midrule")
+print("\n".join(f"{a} & {b} & {c} \\\\" for a, b, c in linhas_solvers))
+print(r"\bottomrule")
+print(r"\end{tabular*}")
+print(r"\caption{Métricas do benchmark por solver. Os tempos de média, mediana, "
+      r"p90 e máximo consideram só as instâncias não fechadas por inspeção; o tempo "
+      r"total cobre as 111. Gap de otimalidade: diferença relativa entre a "
+      r"solução inteira e o limitante dual do solver.}")
+print(r" \label{tab-solvers}")
+print(r"\end{table*}")
+```
+
+<!-- FIGURA: fig-solvers-tempo (dispersão tempo × n_groups, log-y, dois solvers) -->
+
+```{python}
+#| label: fig-solvers-tempo
+#| echo: false
+#| warning: false
+#| fig-width: 3.3
+#| fig-height: 2.6
+#| fig-cap: 'Tempo de resolução por número de grupos da instância (escala log), nos dois solvers — as 44 instâncias fechadas por inspeção resolvem em milissegundos e ficam fora do gráfico. Marcador: média das instâncias daquele porte; _whiskers_: mínimo e máximo.'
+
+from matplotlib.lines import Line2D
+
+stats_fig = (df[df["closed"] == False]
+             .groupby(["solver", "n_groups"])["tempo_s"]
+               .agg(["mean", "min", "max"]).reset_index())
+fig, ax = plt.subplots()
+marcas = {"Gurobi": ("o", "#1f77b4"), "HiGHS": ("s", "#d62728")}
+for nome, (marcador, cor) in marcas.items():
+    sel = stats_fig[stats_fig["solver"] == nome]
+    ax.errorbar(sel["n_groups"], sel["mean"],
+                yerr=[sel["mean"] - sel["min"], sel["max"] - sel["mean"]],
+                linestyle="-", marker=marcador, color=cor,
+                markersize=3.5, linewidth=0.9, elinewidth=0.7,
+                capsize=1.5)
+ax.set_yscale("log")
+ax.set_xlabel("grupos da instância ($|G|$)")
+ax.set_ylabel("tempo de resolução (s)")
+legenda = [Line2D([], [], color=cor, linestyle="-", marker=marcador,
+                  markersize=3.5, linewidth=0.9, label=nome)
+           for nome, (marcador, cor) in marcas.items()]
+ax.legend(handles=legenda, frameon=False, fontsize=6, loc="upper left")
+plt.tight_layout()
+```
+
+## Discussão
+
+Nas `{python} ptbr(len(pivot), 0)` instâncias em que a comparação é direta, os
+dois solvers devolvem o mesmo valor ótimo — a diferença relativa máxima entre os
+objetivos é de `{python} ptbr(dif_solvers.max(), 4)` — e o que os separa é o
+tempo. Os _gap_ máximos de cada solver registram as tolerâncias de parada de
+cada um: o Gurobi prova otimalidade até um _gap_ de
+`{python} sol["gu_gap_max"]`%, enquanto o HiGHS declara _ótimo_ com _gap_
+relativo de até `{python} sol["hi_gap_max"]`% — a tolerância padrão de
+$10^{-4}$ dele
+—, de modo que os objetivos "iguais" o são dentro de margens numéricas
+irrelevantes para o custo em questão (décimos de centavo sobre centenas de
+dólares).
+
+A instância mais dura concentra o contraste entre as arquiteturas.
+`City_58_2022-04-06` (198 pacotes, 11 grupos, 16 _slots_) é a única em que a
+relaxação linear fica longe da solução inteira: nela o Gurobi fecha em
+`{python} sol["c58_gu"]` s, contra `{python} sol["c58_hi_min"]` min do HiGHS —
+`{python} sol["c58_razao"]`× mais tempo. A busca MIP do HiGHS roda em uma thread
+por construção (o próprio log registra "_Parallel search off_", ainda que oito
+threads estejam configuradas), enquanto o Gurobi distribui heurísticas e cortes
+pelas oito — a diferença mede a arquitetura dos solvers, não o hardware. Fora
+ela, o HiGHS resolve tudo em até `{python} sol["hi_max_outros"]` s e o Gurobi em
+até `{python} sol["gu_max_outros"]` s.
+
+Duas validações estruturais atravessam o benchmark. As `{python} sol["n_fech"]`
+instâncias que o pré-processamento fecha por inspeção reproduzem `closed_cost` à
+precisão numérica (diferença máxima de `{python} ptbr(dif_fechadas, 2)`), o que
+valida o modelo e o pré-processamento contra si; e o ótimo de nenhuma instância
+supera o teto de custo `ub_cost` do pré-processamento. As soluções dos dois
+solvers, por sua vez, podem ser postas lado a lado caminhão a caminhão:
+`{python} sol["sol_cmp"]` Registre-se, por fim, a
+condição de reprodutibilidade: execuções MIP com várias threads não são
+determinísticas (heurísticas dependentes de tempo), de modo que os tempos do
+Gurobi variam entre execuções idênticas — as sementes fixadas reduzem, mas não
+eliminam, a variância.

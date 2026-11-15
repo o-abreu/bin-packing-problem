@@ -1,0 +1,30 @@
+{
+  "parametros": {
+    "processos": 2,
+    "threads": 8,
+    "semente": 0,
+    "limite_tempo_s": null,
+    "warm_start": false,
+    "gap": "padrao",
+    "Delta_h": 4.0
+  },
+  "versoes": {
+    "python": "3.12.15",
+    "pulp": "4.2.0",
+    "gurobipy": "13.0.3",
+    "highspy": "1.15.1"
+  },
+  "maquina": {
+    "cpu": "AMD Ryzen AI 9 365 w/ Radeon 880M",
+    "nucleos": 20,
+    "mem_gib": 30,
+    "so": "NixOS 26.11 (Zokor)",
+    "governor": "performance"
+  },
+  "hashes": {
+    "instances.csv": "a4f3d812c552d25c",
+    "groups.csv": "973006956a902435"
+  },
+  "instancias": 111,
+  "gerado_em": "2026-11-14T21:12:13"
+}

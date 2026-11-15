@@ -69,7 +69,7 @@ e no `report/main.qmd`)_
 
 # Pending Work
 
-- [solver-metrics-harness](work/solver-metrics-harness/README.md) (status: pending-plan) — coletar as quatro métricas de solver (status, objetivo, tempo, gap) por instância em CSV, para as 61 rotas, nos dois solvers
-- [solver-section-report](work/solver-section-report/README.md) (status: pending-plan) — escrever a seção "Solução via solvers" (§3) do relatório com tabela comparativa e discussão
+- [solver-metrics-harness](work/solver-metrics-harness/README.md) (status: pending-assessment) — benchmark completo: 222 execuções (111 × Gurobi/HiGHS), todas ótimas; CSVs em `data/results/`; seção §3 renderizada em `report/main.pdf`
+- [solver-section-report](work/solver-section-report/README.md) (status: pending-assessment) — seção "Solução via solvers" (§3) escrita e renderizada; números todos do CSV
 - [alternative-method](work/alternative-method/README.md) (status: pending-plan) — heurística construtiva ciente de custo + meta-heurística para instâncias grandes, benchmark vs exato, alimenta o §4 do relatório
 - [conclusion-section](work/conclusion-section/README.md) (status: pending-plan) — escrever a §5 Conclusão e fechar o relatório

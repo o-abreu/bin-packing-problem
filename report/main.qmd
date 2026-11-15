@@ -103,6 +103,8 @@ base = {
 
 {{< include sections/metodologia/index.qmd >}}
 
+{{< include sections/solucao-solvers.qmd >}}
+
 {{< include sections/disponibilidade.qmd >}}
 
 {{< include sections/declaracao-uso-ia.qmd >}}
