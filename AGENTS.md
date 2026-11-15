@@ -200,9 +200,12 @@ Decisions fixed in the Nov 2026 style pass; keep new prose consistent with them.
 - **Emphasis.** Inline numbers are never bolded — the prose carries the
   emphasis; bold is reserved for term definitions, concepts and list lead-ins
   (e.g., **classes**, **grupos de pacotes idênticos**).
-- **Em-dash.** At most one per sentence; asides go in parentheses or commas;
-  keep the dash only for true contrast ("não fragmenta a instância
-  artificialmente — ele reflete...").
+- **Em-dash.** Never use em-dashes (—) in report prose: reword asides with
+  parentheses, commas, colons, or separate sentences. This covers captions,
+  figure captions, table captions and rows (including raw LaTeX emitted by
+  chunks). En-dashes in numeric/label ranges (R7–R9, 111 instâncias) are fine;
+  the "—" placeholders in table cells (raw LaTeX `---`) are "no value" markers,
+  not punctuation, and stay.
 - **Stock phrases.** "consequência direta", "mordem/morde" (capacity metaphor),
   "regra de bolso": at most one occurrence each in the whole report.
 - **Foreign/technical terms.** Italic + gloss on first use only (_bin packing
