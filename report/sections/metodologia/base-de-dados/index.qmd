@@ -6,17 +6,17 @@ O conjunto é distribuído no Kaggle sob licença MIT [@routeopt2026] e é espel
 dos dados de amostra do acelerador da Microsoft [@routeopt2022]; os arquivos
 usados estão versionados em `data/raw/`:
 
-- `order_large.csv` — `{python} base["pacotes"]` pacotes em
+- `order_large.csv`: `{python} base["pacotes"]` pacotes em
   `{python} base["pedidos"]` pedidos, distribuídos em
   `{python} base["destinos"]` pares origem–destino; é a instância principal;
-- `order_small.csv` — `{python} base["small_pacotes"]` pacotes em
+- `order_small.csv`: `{python} base["small_pacotes"]` pacotes em
   `{python} base["small_pedidos"]` pedidos e
   `{python} base["small_destinos"]` pares origem–destino, usado como caso de
   teste mínimo;
-- `distance.csv` — matriz de distâncias entre cidades, **em metros** (apesar do
+- `distance.csv`: matriz de distâncias entre cidades, **em metros** (apesar do
   nome da coluna, `Distance(M)`; é o que converte custo por km em custo por
   viagem);
-- `trucks.csv` — a frota, transcrita de `src/core/structure.py` do repositório
+- `trucks.csv`: a frota, transcrita de `src/core/structure.py` do repositório
   de origem; o README do projeto lista uma tabela mais antiga e inconsistente, e
   o código é a fonte autoritativa.
 

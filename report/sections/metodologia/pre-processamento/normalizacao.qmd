@@ -45,7 +45,7 @@ do_cache = (caminho_inst.exists() and caminho_grupos.exists()
 
 Para cada combinação (destino, dia de disponibilidade), faz-se três coisas:
 converte os tempos para horas relativas à origem da instância; agrupa os pacotes
-idênticos — mesma área, peso, disponibilidade e prazo — em grupos com
+idênticos (mesma área, peso, disponibilidade e prazo) em grupos com
 multiplicidade $n_g$. O agrupamento é o que permite ao modelo trabalhar com
 contagens em vez de um binário por pacote.
 
@@ -105,9 +105,9 @@ resumo = dict(
 )
 ```
 
-O recorte devolve `{python} resumo["instancias"]` instâncias não vazias —
-mediana de `{python} resumo["mediana"]` pacotes, p90 de `{python} resumo["p90"]`
-e máximo de `{python} resumo["maximo"]` —, que é a base dos três portes do plano
+O recorte devolve `{python} resumo["instancias"]` instâncias não vazias
+(mediana de `{python} resumo["mediana"]` pacotes, p90 de `{python} resumo["p90"]`
+e máximo de `{python} resumo["maximo"]`), que é a base dos três portes do plano
 experimental. Nenhum grupo $g$ (`{python} resumo["inviaveis"]` casos) é tal que 
 $$
 av_g + t_{\text{viagem}} > dl_g.

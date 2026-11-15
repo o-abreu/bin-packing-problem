@@ -1,7 +1,7 @@
 ### Conjuntos
 
-- $G = \{1, \dots, |G|\}$: grupos de pacotes idênticos — pacotes com a mesma
-  área, peso, disponibilidade e prazo —, cada grupo com multiplicidade $n_g$; o
+- $G = \{1, \dots, |G|\}$: grupos de pacotes idênticos (pacotes com a mesma
+  área, peso, disponibilidade e prazo), cada grupo com multiplicidade $n_g$; o
   número de grupos é $|G|$, e o total de pacotes da instância é $n = \sum_g n_g$;
 - $T = \{1, \dots, 4\}$: tipos de caminhão disponíveis;
 - $J = \{1, \dots, m\}$: _slots_ (posições) de caminhão disponíveis, com
@@ -9,8 +9,8 @@
 
 Os conjuntos e contagens acima são locais à instância: cada instância (destino,
 dia) tem os seus próprios $G$, $n_g$, $n$ e $m$, e o modelo é resolvido
-uma vez por instância. Em particular, $m \le n$ vale por construção — nunca há
-motivo para abrir mais slots do que pacotes —, e o pré-processamento o estreita
+uma vez por instância. Em particular, $m \le n$ vale por construção, pois nunca
+há motivo para abrir mais slots do que pacotes, e o pré-processamento o estreita
 com o teto de custo (subseção de redução).
 
 A instância é definida **sobre grupos**, e não sobre pacotes. Isso não perde
@@ -26,7 +26,7 @@ deixar vazia ou preencher com um caminhão de algum tipo. Como o número de
 veículos é justamente o que se quer decidir, criam-se $m$ posições candidatas e
 deixa-se que $y_{jt}$ indique se a posição $j$ é um caminhão do tipo $t$; se
 nenhum tipo for atribuído, o slot permanece fechado (R4–R5). Os slots são
-intercambiáveis entre si — trocar dois produz a mesma solução física —, o que
+intercambiáveis entre si (trocar dois produz a mesma solução física), o que
 gera **simetria de permutação**: cada plano de carregamento tem até $m!$
 representações de custo idêntico e de mesmo limitante [@margot2010]. A simetria
 não altera o valor ótimo, mas encarece a prova de otimalidade: cópias simétricas
@@ -35,7 +35,7 @@ partir do resultado da outra, e o esforço passa a acompanhar o número de rótu
 em vez do número de soluções distintas [@ostrowski2011]. A relaxação linear
 também fica degenerada, com vértices fracionários equivalentes [@sherali2001], e
 as desigualdades válidas obtidas para uma cópia não se transpõem automaticamente
-às demais [@margot2010] — o que motivou as técnicas de quebra de simetria
+às demais [@margot2010], o que motivou as técnicas de quebra de simetria
 baseadas em órbitas [@ostrowski2011; @kaibel2008]. Por isso o modelo inclui a
 restrição de quebra R10, que fixa o padrão de abertura.
 

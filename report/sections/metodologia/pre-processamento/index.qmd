@@ -1,6 +1,6 @@
 ## Pré-processamento
 
-O conjunto bruto é uma tabela de pedidos; o modelo precisa de instâncias — e de
+O conjunto bruto é uma tabela de pedidos; o modelo precisa de instâncias, e de
 instâncias pequenas. Esta seção descreve as etapas que transformam um no outro
 sem alterar o ótimo: normalização de unidades, recorte das instâncias e redução
 do modelo. O agrupamento de pacotes idênticos, que também reduz a instância, é

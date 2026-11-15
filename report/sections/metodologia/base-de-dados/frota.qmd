@@ -1,10 +1,10 @@
 ### Frota
 
 A frota tem quatro tipos de caminhão, cada um definido pela área de piso $A_t$,
-pela capacidade de peso $W_t$ e pelo custo $c_t$ por quilômetro — os três
+pela capacidade de peso $W_t$ e pelo custo $c_t$ por quilômetro, os três
 parâmetros que, multiplicados pela distância da rota, dão o custo fixo de cada
-viagem. A tabela a seguir reúne esses valores — vindos de `trucks.csv`,
-transcrito de `src/core/structure.py` do acelerador de origem [@routeopt2022] —
+viagem. A tabela a seguir reúne esses valores, vindos de `trucks.csv`
+(transcrito de `src/core/structure.py` do acelerador de origem [@routeopt2022]),
 e dois indicadores derivados que serão úteis na discussão do modelo.
 
 ```{python}
@@ -94,10 +94,10 @@ A densidade é o parâmetro que decide qual dos dois recursos se esgota primeiro
 uma carga cuja densidade fica abaixo de $W_t/A_t$ enche a área do caminhão antes
 de atingir o peso máximo, e acima desse limiar acontece o contrário. A
 @fig-densidade mostra a distribuição item a item. Tomada item a item, a mediana
-é de `{python} frota["dens_mediana"]` kg/m² — à esquerda das razões
+é de `{python} frota["dens_mediana"]` kg/m², à esquerda das razões
 $W_t/A_t$ dos caminhões de 16,5 m (`{python} frota["dens_165"]`), 12,5 m
 (`{python} frota["dens_125"]`) e 9,6 m (`{python} frota["dens_96"]`), e à
-direita da do caminhão de 7,6 m (`{python} frota["dens_76"]`) —, embora a cauda
+direita da do caminhão de 7,6 m (`{python} frota["dens_76"]`), embora a cauda
 se estenda bem acima delas. Somando a carga de uma rota, a densidade agregada
 cai para `{python} frota["dens_agregada"]` kg/m², e é esse valor que decide
 o regime de quase todas as rotas.
@@ -108,7 +108,7 @@ o regime de quase todas as rotas.
 #| label: fig-densidade
 #| fig-width: 3.3
 #| fig-height: 2.4
-#| fig-cap: 'Densidade dos pacotes de `order_large.csv`, uma observação por item (kg/m²). Linhas tracejadas: razão $W_t/A_t$ de cada tipo de caminhão — abaixo dela a área se esgota antes do peso. Linha cheia: mediana dos itens (589 kg/m²). A do caminhão de 9,6 m (669 kg/m²) praticamente coincide com a do de 16,5 m.'
+#| fig-cap: 'Densidade dos pacotes de `order_large.csv`, uma observação por item (kg/m²). Linhas tracejadas: razão $W_t/A_t$ de cada tipo de caminhão, abaixo da qual a área se esgota antes do peso. Linha cheia: mediana dos itens (589 kg/m²). A do caminhão de 9,6 m (669 kg/m²) praticamente coincide com a do de 16,5 m.'
 
 fig, ax = plt.subplots()
 ax.hist(items["dens"], bins=40, color="0.78", edgecolor="black", linewidth=0.3)

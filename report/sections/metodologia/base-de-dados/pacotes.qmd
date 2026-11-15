@@ -41,16 +41,16 @@ tipos mais frequentes concentram `{python} pac["top10"]`% dos itens e o mais
 frequente aparece `{python} pac["freq_max"]` vezes, enquanto
 `{python} pac["singleton"]` tipos ocorrem uma única vez. Se a identificação
 incluir também as janelas de tempo, o número de **classes** (área, peso,
-disponibilidade, prazo) sobe para `{python} pac["classes"]` — e, por rota, a
+disponibilidade, prazo) sobe para `{python} pac["classes"]`, e, por rota, a
 variedade é ainda menor: nenhuma rota passa de `{python} pac["classes_rota"]`
 classes. É essa duplicação que permite descrever a instância por **grupos de
 pacotes idênticos**, com uma variável de contagem por grupo em vez de um binário
-por item — a decisão de modelagem adotada na formulação.
+por item, que é a decisão de modelagem adotada na formulação.
 
 Em termos de tamanho, os pacotes ocupam de `{python} pac["area_min"]` a
 `{python} pac["area_max"]` m² (mediana `{python} pac["area_med"]`) e pesam de
 `{python} pac["peso_min"]` a `{python} pac["peso_max"]` kg (mediana
-`{python} pac["peso_med"]`) — ambos com cauda longa à direita, como mostra a
+`{python} pac["peso_med"]`), ambos com cauda longa à direita, como mostra a
 @fig-pacotes-dist. As duas distribuições são assimétricas na mesma direção, o
 que já sugere que área e peso não variam de forma independente.
 

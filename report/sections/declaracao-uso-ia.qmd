@@ -17,8 +17,7 @@ resultados reportados.
 
 Não foram produzidos por IA os dados, a instância, os resultados numéricos nem
 as conclusões: toda solução reportada provém de execuções dos solvers sobre os
-arquivos em `data/raw/`, reproduzíveis a partir do código versionado, e cada
-número citado no texto foi reconferido contra a saída correspondente. A
+arquivos em `data/raw/`, reproduzíveis a partir do código versionado. A
 formulação do modelo, a escolha das instâncias e a interpretação dos resultados
 são de responsabilidade humana, assim como a decisão final sobre o que consta no
 relatório.
@@ -33,25 +32,25 @@ commit `90b48b2` (28 out. 2026).[^nixrepo] A configuração do agente é, portan
 auditável: os caminhos abaixo são relativos a
 `home/features/programs/cli/opencode/`.
 
-- `default.nix` — habilitação do OpenCode e preferências da interface;
-- `agents.nix` — instruções globais do agente (`AGENTS.md`), incluindo a regra
-  de **nunca** instalar pacotes de forma imperativa, restringindo o ambiente ao
-  que está declarado no flake;
-- `agents/primary/research.nix` — definição do agente `research`, o único
+- `default.nix`: habilitação do OpenCode e preferências da interface;
+- `agents.nix`: instruções globais do agente (`AGENTS.md`), incluindo a regra de
+  **nunca** instalar pacotes de forma imperativa, restringindo o ambiente ao que
+  está declarado no flake;
+- `agents/primary/research.nix`: definição do agente `research`, o único
   autorizado a acionar o ferramental de pesquisa bibliográfica;
-- `tools/asta/default.nix` e `tools/asta/_skills.nix` — _skills_ e CLI do
+- `tools/asta/default.nix` e `tools/asta/_skills.nix`: _skills_ e CLI do
   **Asta** (AllenAI), _vendorizados_ do projeto `allenai/asta-plugins`;
-- `tools/zotero.nix` — acesso ao **Zotero** local via `zotero-mcp`/`zotero-cli`
+- `tools/zotero.nix`: acesso ao **Zotero** local via `zotero-mcp`/`zotero-cli`
   sobre a API HTTP local do Zotero;
-- `mcp/` — definição dos servidores MCP habilitados;
-- `providers/` — provedores de modelos de linguagem.
+- `mcp/`: definição dos servidores MCP habilitados;
+- `providers/`: provedores de modelos de linguagem.
 
 As tarefas de pesquisa usam o agente `research`, que tem permissão explícita
-apenas para as ferramentas de pesquisa — Asta, Zotero, Kaggle e o `context7`
+apenas para as ferramentas de pesquisa: Asta, Zotero, Kaggle e o `context7`
 (documentação de bibliotecas); as mesmas ferramentas não são acionadas pelos
-demais agentes nas tarefas deste trabalho. Essa separação é
-deliberada: ela concentra em um único perfil, com escopo restrito, o acesso a
-bases bibliográficas e a execução de comandos de pesquisa.
+demais agentes nas tarefas deste trabalho. Essa separação é deliberada: ela
+concentra em um único perfil, com escopo restrito, o acesso a bases
+bibliográficas e a execução de comandos de pesquisa.
 
 ## Recuperação de literatura
 
@@ -59,7 +58,7 @@ A busca bibliográfica usou as _skills_ Asta `find-literature`,
 `semantic-scholar`, `pdf-download` e `literature-report`, apoiadas na API do
 Semantic Scholar e em PDFs de acesso aberto, além da _skill_ `check-claims` para
 revisar a aderência entre afirmações e evidências. A bibliografia foi mantida na
-coleção local do Zotero _Programação Matemática — Bin Packing (VSBPP)_, com
+coleção local do Zotero _Programação Matemática, Bin Packing (VSBPP)_, com
 subcoleção _Datasets_ para os dados e _softwares_. Toda entrada do `refs.bib`
 foi verificada quanto a autoria, veículo, ano e DOI; referências sugeridas por
 IA e não confirmadas em fonte primária foram descartadas.
@@ -75,12 +74,12 @@ modelos é feita por sessão.
 
 ## Controles e verificação
 
-Três controles foram adotados: (i) ambiente reprodutível — dependências
+Três controles foram adotados: (i) ambiente reprodutível, com dependências
 declaradas (`devenv.nix`, `requirements.txt`) e nenhuma instalação imperativa,
 de modo que todo código gerado com apoio de IA é executado no mesmo ambiente
-descrito no repositório; (ii) verificação de fontes — nenhuma referência
+descrito no repositório; (ii) verificação de fontes: nenhuma referência
 bibliográfica entra no texto sem conferência em fonte primária; (iii)
-reconferência de resultados — os números do relatório são lidos das saídas do
+reconferência de resultados: os números do relatório são lidos das saídas do
 solver, não transcritos de respostas do modelo.
 
 Os autores revisaram integralmente o texto, o código e os resultados aqui

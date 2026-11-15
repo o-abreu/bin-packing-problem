@@ -1,11 +1,11 @@
 # Solução via solvers
 
-A seção anterior declarou o modelo; esta o traduz para código e o resolve nas
-111 instâncias (rota × dia) de `data/pre-processed/` com dois solvers — o
-comercial Gurobi [@gurobi] e o de código aberto HiGHS [@highs] —, registrando,
-para cada par instância × solver, as quatro métricas exigidas: status da
-solução, valor da função objetivo, tempo de processamento e _gap_ de otimalidade
-(a distância relativa entre a solução inteira e o limitante dual).
+Esta seção versa sobre o código utilizado para resolver as 111 instâncias (rota
+× dia) de `data/pre-processed/` com os dois solvers (o comercial Gurobi
+[@gurobi] e o de código aberto HiGHS [@highs]), registrando, para cada par
+instância × solver, as quatro métricas exigidas: status da solução, valor da
+função objetivo, tempo de processamento e _gap_ de otimalidade (a distância
+relativa entre a solução inteira e o limitante dual).
 
 ```{python}
 #| label: solvers-setup
@@ -225,22 +225,26 @@ v_highs = importlib.metadata.version("highspy")
 
 ## Implementação
 
-O modelo agregado R1–R10 é montado por uma única função Python, sobre a
-biblioteca PuLP, e resolvido uma vez por solver. As variáveis seguem a
-declaração da seção de variáveis: contagens inteiras
+O modelo agregado R1–R10 é montado por uma única função Python `LpProblem`,
+disponibilizada pela biblioteca PuLP, e resolvido uma vez por solver. As
+variáveis seguem a declaração da seção de variáveis: contagens inteiras
 $z_{gj} \in \{0, \dots, n_g\}$, binárias $u_{gj}$ e $y_{jt}$ e partidas
 contínuas $\tau_j \ge 0$. Duas escolhas de codificação merecem nota. Primeira: o
 limite superior global $\max_g n_g$ substitui o por-grupo $n_g$ na declaração de
-$z_{gj}$ — válido, pois R1 ($\sum_j z_{gj} = n_g$, com $z_{gj} \ge 0$) já
-implica $z_{gj} \le n_g$. Segunda: a constante de desativação $M$ usa o teto
-declarado nos parâmetros ($\ge \max_g dl_g -
-\min_g av_g$) com a folga $\Delta + t_{\text{viagem}}$, que garante a
-desativação limpa de R7–R9 mesmo quando o tempo de viagem da rota (até
-`{python} sol["tv_max"]` h) supera a janela de algum grupo — com a folga,
-nenhuma restrição desativada amarra $\tau_j$.
+$z_{gj}$ de maneira a armazenar tais valores em uma única tabela; o que é
+válido, pois R1 ($\sum_j z_{gj} = n_g$, com $z_{gj} \ge 0$) já implica
+$z_{gj} \le n_g$. Segunda: a constante de desativação $M$ usa o teto declarado
+nos parâmetros ($\ge \max_g dl_g - \min_g av_g$) acrescido da folga
+$\Delta + t_{\text{viagem}}$ ($t_{\text{viagem}}$ chega a
+`{python} sol["tv_max"]` h na rota mais longa). A folga mantém os limites das
+restrições desativadas fora do intervalo de partidas viáveis, inclusive as de
+caminhões vazios, cuja partida só é limitada pelas próprias restrições
+desativadas e por $\tau_j \ge 0$; sem ela, o limite de uma R9 desativada
+($dl_g - t_{\text{viagem}} + M$) poderia ficar negativo e deixar sem partida
+viável um caminhão vazio.
 
 O custo $C_t = c_t\,d$ entra direto no objetivo, e cada instância é reconstruída
-do zero para cada solver — nenhum estado de um solve contamina o outro. O tempo
+do zero para cada solver; nenhum estado de um solve contamina o outro. O tempo
 registrado é o do solver (`solve time` do registro de execução do PuLP), não o
 de montagem do modelo, que é da ordem de milissegundos.
 
@@ -251,14 +255,15 @@ execução, resumidos na tabela a seguir: oito _threads_ por execução, semente
 fixadas (`Seed = 0` no Gurobi, `random_seed = 0` no HiGHS), sem limite de tempo
 nem _warm start_, e o _gap_ de parada padrão de cada um. O paralelismo está
 entre as execuções: as instâncias são MILPs independentes, e o benchmark
-distribui as 222 por um _pool_ de `{python} ptbr(PROTO["processos"])` processos
-— com oito threads por solve, dois processos simultâneos são o que os 20 núcleos
+distribui as 222 por um _pool_ de `{python} ptbr(PROTO["processos"])` processos;
+com oito threads por solve, dois processos simultâneos são o que os 20 núcleos
 da máquina comportam. Sem limite de tempo, cada execução termina por conta
 própria, e a comparação de tempo fica limpa de artefatos de corte. Uma
-assimetria é arquitetural, não de configuração: com oito threads, o Gurobi
-paraleliza a busca inteira, enquanto o HiGHS declara no próprio log "_Parallel
-search off_" e efetivamente procura em uma — a diferença de tempo que isso
-produz é um achado do experimento (§ Discussão), não um viés do protocolo.
+assimetria, porém, é de configuração: com oito threads, o Gurobi paraleliza a
+busca inteira, enquanto o HiGHS mantém a busca MIP em uma, porque a opção
+`parallel` dele, que a habilita, não fazia parte do protocolo (o log registra
+"_Parallel search off_"). O efeito desse padrão é medido no § Discussão,
+inclusive com a busca paralela do HiGHS habilitada em braço próprio.
 
 ```{python}
 #| label: tabela-protocolo
@@ -276,16 +281,14 @@ linhas_protocolo = [
     ("Limite de tempo", "nenhum"),
     ("\\textit{Warm start}", "não"),
     ("\\textit{Gap} de parada", "padrão de cada solver"),
-    ("Log de execução", "um arquivo por solve em \\texttt{data/results/logs/} "
-                        "(não versionado)"),
+    ("Log de execução", "um arquivo (não versionado) por execução em \\texttt{data/results/logs/}"),
     ("Janela de consolidação $\\Delta$", f"{ptbr(Delta)} h"),
-    ("Processador", f'{specs["cpu"]}; {ptbr(specs["nucleos"])} núcleos'),
+    ("Processador", f'{specs["cpu"]}; {ptbr(specs["nucleos"])} núcleos' + (f'; modo \\texttt{{{specs["governor"]}}}' if specs["governor"] else "")),
     ("Memória", f'{ptbr(specs["mem_gib"])} GiB'),
-    ("Sistema", specs["so"] + (f'; governador \\texttt{{{specs["governor"]}}}'
-                               if specs["governor"] else "")),
+    ("Sistema", specs["so"]),
 ]
-print(r"\begin{table*}[!ht] \centering")
-print(r"\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}p{0.30\textwidth}p{0.65\textwidth}@{}}")
+print(r"\begin{table}[!t] \centering")
+print(r"\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}p{0.32\columnwidth}p{0.60\columnwidth}@{}}")
 print(r"\toprule")
 print(r"Parâmetro & Valor \\")
 print(r"\midrule")
@@ -297,20 +300,19 @@ print(r"\caption{Protocolo de execução do benchmark, idêntico para os dois "
       r"agregado R1--R10 sobre as 111 instâncias de \texttt{data/pre-processed/}. "
       r"Sem limite de tempo: cada execução termina por conclusão do solver.}"
       r" \label{tab-protocolo}")
-print(r"\end{table*}")
+print(r"\end{table}")
 ```
 
-Cada execução (uma linha por instância × solver) vai para
-`data/results/solver_metrics.csv`, acompanhada da estrutura da solução — os
-caminhões abertos, com tipo, partida e ocupação de área e de peso, em
-`data/results/solucao_caminhoes.csv`, e a atribuição de grupos em
-`data/results/solucao_grupos.csv` — e do registro de protocolo
-`data/results/protocolo.json`: parâmetros, versões das bibliotecas,
+Na pasta `data/results`, cada execução (uma linha por instância × solver) vai
+para `solver_metrics.csv`, acompanhada da estrutura da solução (os caminhões
+abertos, com tipo, partida e ocupação de área e de peso, em
+`solucao_caminhoes.csv`, e a atribuição de grupos em `solucao_grupos.csv`) e do
+registro de protocolo `protocolo.json`: parâmetros, versões das bibliotecas,
 especificação da máquina e o hash SHA-256 dos dois arquivos de entrada. Nas
-renderizações seguintes, o benchmark detecta o arquivo (paridade de hashes e
-de parâmetros) e lê o CSV em vez de resolver de novo; apagar o CSV força a
+renderizações seguintes, o benchmark detecta o arquivo (paridade de hashes e de
+parâmetros) e lê o CSV em vez de resolver de novo; apagar o CSV força a
 reexecução completa. Durante a execução, o progresso fica observável em
-`data/results/.partial.csv`, regravado a cada solve.
+`.partial.csv`, regravado a cada solve.
 
 ```{python}
 #| label: solvers-benchmark
@@ -320,8 +322,9 @@ reexecução completa. Durante a execução, o progresso fica observável em
 # instâncias: dois processos simultâneos, cada solve com 8 threads — o que
 # os 20 núcleos da máquina comportam. O tempo medido é o do solver; o HiGHS
 # avança só em uma thread na busca MIP ("Parallel search off" no próprio
-# log), de modo que a diferença de tempo entre os solvers reflete a
-# arquitetura de cada um, não uma configuração desigual.
+# log, pois a opção `parallel` dele não faz parte do protocolo), de modo
+# que a diferença de tempo entre os solvers reflete a configuração de
+# cada um; o § Discussão mede o efeito com a opção ligada.
 def sha256_arq(caminho):
     return hashlib.sha256(Path(caminho).read_bytes()).hexdigest()[:16]
 
@@ -411,7 +414,7 @@ elif RASCUNHO and csv_parcial.exists():
     caminhoes = None
     carga_grupos = None
     fonte = f"RASCUNHO: execução em andamento ({len(df)} de {2 * len(insts)} execuções)"
-    fonte_status = (f"**Rascunho** — execução em andamento: {len(df)} de "
+    fonte_status = (f"**Rascunho** (execução em andamento): {len(df)} de "
                     f"{2 * len(insts)} execuções concluídas; números parciais.")
 else:
     RESULT.mkdir(exist_ok=True)
@@ -526,7 +529,7 @@ detalhe_e = (f"soluções idênticas em {iguais}/{total_cmp} instâncias "
              f"({tipoi} com mesma frota e atribuição distinta, "
              f"{len(frotas_diferentes)} com frota distinta)"
              if total_cmp else "comparação de soluções na execução final")
-print(f"Validação: {len(df)} execuções ({fonte}), checks (a)–(e): OK — "
+print(f"Validação: {len(df)} execuções ({fonte}), checks (a)–(e): OK; "
       f"máx. diferença fechadas vs closed_cost: {dif_fechadas:.2e}, "
       f"máx. diferença relativa entre solvers: {dif_solvers.max():.2e}; "
       f"(e) {detalhe_e}")
@@ -537,6 +540,17 @@ print(f"Validação: {len(df)} execuções ({fonte}), checks (a)–(e): OK — "
 ```{python}
 #| label: solvers-agregados
 #| include: false
+def cief(x, casas=1):
+    r"""Notação científica pt-BR em LaTeX ($m \times 10^{e}$), para valores
+    ordens de magnitude abaixo da menor casa decimal fixa (gaps de parada,
+    diferenças numéricas)."""
+    e = int(np.floor(np.log10(abs(x))))
+    m = x / 10.0**e
+    if float(ptbr(m, casas).replace(",", ".")) >= 10:
+        m, e = m / 10, e + 1
+    return f"${ptbr(m, casas).replace(',', '{,}')} \\times 10^{{{e}}}$"
+
+
 # Agregados por solver: os 44 closes por inspeção são triviais (< 0,1 s) e
 # puxariam as estatísticas de tempo para baixo; o bloco "não triviais"
 # (67 instâncias) isola os MILPs que exigem busca.
@@ -553,7 +567,7 @@ for nome, k in [("Gurobi", "gu"), ("HiGHS", "hi")]:
     sol[f"{k}_p90"] = ptbr(np.percentile(nt["tempo_s"], 90), 2)
     sol[f"{k}_max"] = ptbr(nt["tempo_s"].max(), 2)
     sol[f"{k}_pior"] = str(pior["instance"])
-    sol[f"{k}_gap_max"] = ptbr(s["gap_pct"].max(), 4)
+    sol[f"{k}_gap_max"] = cief(s["gap_pct"].max())
     sol[f"{k}_fech_tempo"] = ptbr(s[s["closed"]]["tempo_s"].sum(), 2)
 razao_med = df[~df["closed"]].pivot(index="instance", columns="solver",
                                     values="tempo_s").pipe(
@@ -589,17 +603,15 @@ if caminhoes is not None:
                           f"caminhão a caminhão em {ptbr(iguais)} de "
                           f"{ptbr(total_cmp)} instâncias; em "
                           f"{ptbr(tipoi)} a frota por tipo é a mesma e "
-                          f"muda a atribuição — ótimos múltiplos de mesmo "
-                          f"valor —, e em {ptbr(len(frotas_diferentes))} a "
+                          f"muda a atribuição (ótimos múltiplos de mesmo "
+                          f"valor), e em {ptbr(len(frotas_diferentes))} a "
                           f"composição da frota difere, com o mesmo custo.")
 else:
     sol["sol_cmp"] = "(A comparação caminhão a caminhão entra na versão final.)"
 ```
 
-`{python} fonte_status`
-
 A tabela a seguir resume as quatro métricas nos dois solvers. As estatísticas de
-tempo da tabela — e a @fig-solvers-tempo — isolam as `{python} sol["n_nt"]`
+tempo da tabela e a @fig-solvers-tempo isolam as `{python} sol["n_nt"]`
 instâncias que exigem busca (as outras `{python} sol["n_fech"]` fecham por
 inspeção e resolvem em milissegundos, com tempo total de
 `{python} sol["gu_fech_tempo"]` s no Gurobi e `{python} sol["hi_fech_tempo"]` s
@@ -619,7 +631,7 @@ linhas_solvers = [
     ("Tempo máximo (s)", sol["gu_max"], sol["hi_max"]),
     ("\\textit{Gap} máximo (\\%)", sol["gu_gap_max"], sol["hi_gap_max"]),
 ]
-print(r"\begin{table*}[!ht] \centering")
+print(r"\begin{table}[!t] \centering")
 print(r"\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lrr@{}}")
 print(r"\toprule")
 print(r"Métrica & Gurobi & HiGHS \\")
@@ -632,7 +644,7 @@ print(r"\caption{Métricas do benchmark por solver. Os tempos de média, mediana
       r"total cobre as 111. Gap de otimalidade: diferença relativa entre a "
       r"solução inteira e o limitante dual do solver.}")
 print(r" \label{tab-solvers}")
-print(r"\end{table*}")
+print(r"\end{table}")
 ```
 
 <!-- FIGURA: fig-solvers-tempo (dispersão tempo × n_groups, log-y, dois solvers) -->
@@ -643,7 +655,7 @@ print(r"\end{table*}")
 #| warning: false
 #| fig-width: 3.3
 #| fig-height: 2.6
-#| fig-cap: 'Tempo de resolução por número de grupos da instância (escala log), nos dois solvers — as 44 instâncias fechadas por inspeção resolvem em milissegundos e ficam fora do gráfico. Marcador: média das instâncias daquele porte; _whiskers_: mínimo e máximo.'
+#| fig-cap: 'Tempo de resolução por número de grupos da instância (escala log), nos dois solvers: as 44 instâncias fechadas por inspeção resolvem em milissegundos e ficam fora do gráfico. Marcador: média das instâncias daquele porte; _whiskers_: mínimo e máximo.'
 
 from matplotlib.lines import Line2D
 
@@ -671,28 +683,169 @@ plt.tight_layout()
 
 ## Discussão
 
-Nas `{python} ptbr(len(pivot), 0)` instâncias em que a comparação é direta, os
-dois solvers devolvem o mesmo valor ótimo — a diferença relativa máxima entre os
-objetivos é de `{python} ptbr(dif_solvers.max(), 4)` — e o que os separa é o
-tempo. Os _gap_ máximos de cada solver registram as tolerâncias de parada de
-cada um: o Gurobi prova otimalidade até um _gap_ de
-`{python} sol["gu_gap_max"]`%, enquanto o HiGHS declara _ótimo_ com _gap_
-relativo de até `{python} sol["hi_gap_max"]`% — a tolerância padrão de
-$10^{-4}$ dele
-—, de modo que os objetivos "iguais" o são dentro de margens numéricas
-irrelevantes para o custo em questão (décimos de centavo sobre centenas de
-dólares).
+```{python}
+#| label: discussao-gaps
+#| output: asis
+#| echo: false
+# Parágrafo emitido como asis: os três números dele (diferença relativa
+# máxima e os dois gaps de parada) são ordens de magnitude abaixo da menor
+# casa decimal de ptbr() e exigem notação científica em LaTeX ($m \times
+# 10^{e}$), que os chunks inline não entregam (o output inline sai como
+# texto com a barra invertida escapada). O mesmo mecanismo das tabelas
+# cruas desta seção (output: asis) preserva o LaTeX integralmente.
+print(f"""Nas {ptbr(len(pivot), 0)} instâncias em que a comparação é direta, os
+dois solvers devolvem o mesmo valor ótimo (a diferença relativa máxima entre os
+objetivos é de {cief(dif_solvers.max())}) e o que os separa é o tempo. Os
+_gap_ máximos de cada solver registram as tolerâncias de parada de cada um: o
+Gurobi prova otimalidade até um _gap_ de {sol["gu_gap_max"]}%, enquanto o HiGHS
+declara _ótimo_ com _gap_ relativo de até {sol["hi_gap_max"]}% (a tolerância
+padrão de $10^{{-4}}$ dele), de modo que os objetivos "iguais" o são dentro de
+margens numéricas irrelevantes para o custo em questão (décimos de centavo
+sobre centenas de dólares).""")
+```
 
 A instância mais dura concentra o contraste entre as arquiteturas.
 `City_58_2022-04-06` (198 pacotes, 11 grupos, 16 _slots_) é a única em que a
 relaxação linear fica longe da solução inteira: nela o Gurobi fecha em
-`{python} sol["c58_gu"]` s, contra `{python} sol["c58_hi_min"]` min do HiGHS —
+`{python} sol["c58_gu"]` s, contra `{python} sol["c58_hi_min"]` min do HiGHS,
 `{python} sol["c58_razao"]`× mais tempo. A busca MIP do HiGHS roda em uma thread
-por construção (o próprio log registra "_Parallel search off_", ainda que oito
-threads estejam configuradas), enquanto o Gurobi distribui heurísticas e cortes
-pelas oito — a diferença mede a arquitetura dos solvers, não o hardware. Fora
-ela, o HiGHS resolve tudo em até `{python} sol["hi_max_outros"]` s e o Gurobi em
-até `{python} sol["gu_max_outros"]` s.
+(o próprio log registra "_Parallel search off_", ainda que oito threads estejam
+configuradas), enquanto o Gurobi distribui heurísticas e cortes pelas oito.
+Fora ela, o HiGHS resolve tudo em até `{python} sol["hi_max_outros"]` s e o
+Gurobi em até `{python} sol["gu_max_outros"]` s.
+
+```{python}
+#| label: solvers-paralelo-agregados
+#| include: false
+# Braço adicional: HiGHS com parallel="on" (busca MIP paralela). Dados do
+# data/results/solver_metrics_highs_parallel_parcial.csv (108 solves
+# concluídos; o solve da instância dura foi abortado, registro em
+# data/results/aborto_highs_parallel.json). A comparação isola as instâncias
+# não-triviais completadas nos dois braços (as três maiores ficaram sem
+# dados no braço paralelo, inclusive a dura, fora do gráfico também).
+df_par = pd.read_csv(RESULT / "solver_metrics_highs_parallel_parcial.csv")
+df_par = df_par[df_par["solver"] == "HiGHS-parallel"]
+aborto = json.loads((RESULT / "aborto_highs_parallel.json").read_text())
+
+insts_par = set(df_par["instance"])
+nt_par = df_par[~df_par["closed"]]
+nt_seq = df[(df["solver"] == "HiGHS") & (~df["closed"])
+            & (df["instance"].isin(insts_par))]
+par = {"n_nt": ptbr(len(nt_par))}
+for k, s in [("hiseq", nt_seq), ("hipar", nt_par)]:
+    par[f"{k}_otimos"] = ptbr((s["status"] == "Optimal").sum())
+    par[f"{k}_total"] = ptbr(s["tempo_s"].sum(), 1)
+    par[f"{k}_med"] = ptbr(s["tempo_s"].median(), 2)
+    par[f"{k}_media"] = ptbr(s["tempo_s"].mean(), 2)
+    par[f"{k}_p90"] = ptbr(np.percentile(s["tempo_s"], 90), 2)
+    par[f"{k}_max"] = ptbr(s["tempo_s"].max(), 2)
+    par[f"{k}_gap_max"] = cief(s["gap_pct"].max())
+razao_par = (nt_seq.set_index("instance")["tempo_s"]
+             / nt_par.set_index("instance")["tempo_s"])
+par["razao_med"] = ptbr(razao_par.median(), 2)
+par["n_mais_rapido"] = ptbr(int((razao_par > 1).sum()))
+```
+
+O registro "_Parallel search off_" nos logs revelou que a busca MIP do HiGHS é
+paralelizável, mas por uma opção própria (`parallel`, padrão `choose`): a
+opção `threads` só dimensiona o pool de threads, e o protocolo não fixava
+aquela. Mediu-se então o efeito de ligá-la em um braço adicional do benchmark:
+as mesmas 111 instâncias, o mesmo modelo R1–R10, `threads=8`, semente 0, sem
+limite de tempo e _gap_ padrão, em execução sequencial (os logs desse braço
+registram "_Parallel search on_", com 14 _workers_, processos trabalhadores
+da árvore). Na instância dura o
+resultado é destrutivo: a busca paralela não fecha a instância. A execução foi
+abortada manualmente após `{python} ptbr(aborto["tempo_solver_s"], 0)` s de
+busca no relógio do solver (2 h 28 min), `{python} ptbr(aborto["tempo_solver_s"] / t_hi, 1)`×
+o que o braço sequencial levou para fechá-la (`{python} sol["c58_hi_min"]`
+min), com o _gap_ dual estático em `{python} ptbr(aborto["gap_pct"], 2)`% e
+apenas `{python} ptbr(aborto["arvore_explorada_pct"], 1)`% da árvore explorada:
+o limitante dual não avança nos últimos
+`{python} ptbr(aborto["bound_estatico_ultimo_s"], 0)` s (1 h 35 min) de busca,
+ainda que mais de `{python} ptbr(aborto["nos_no_periodo"] / 1e6, 0)` milhões de
+nós tenham sido processados no período. O aborto não afeta as outras
+instâncias: as 108 que o braço paralelo completou antes dele, incluindo as 44
+fechadas por inspeção, têm todas status ótimo.
+
+Nas `{python} par["n_nt"]` instâncias não-triviais que os dois braços
+completaram, os objetivos são idênticos e os tempos se equivalem no porte
+pequeno: o braço paralelo é o mais rápido em `{python} par["n_mais_rapido"]`
+delas, com razão entre os tempos de mediana `{python} par["razao_med"]`; a
+tabela a seguir resume as métricas. O ganho, porém, não alcança o porte
+pesado: é o braço paralelo que carrega os piores tempos individuais, com
+`{python} par["hipar_max"]` s no máximo contra `{python} par["hiseq_max"]` s do
+sequencial, e a instância dura, que nem fecha, não entra no gráfico.
+
+```{python}
+#| label: tabela-solvers-paralelo
+#| echo: false
+#| output: asis
+linhas_par = [
+    ("Execuções com status ótimo", f'{par["hiseq_otimos"]}/{par["n_nt"]}',
+     f'{par["hipar_otimos"]}/{par["n_nt"]}'),
+    ("Tempo total (s)", par["hiseq_total"], par["hipar_total"]),
+    ("Tempo mediano (s)", par["hiseq_med"], par["hipar_med"]),
+    ("Tempo médio (s)", par["hiseq_media"], par["hipar_media"]),
+    ("Tempo p90 (s)", par["hiseq_p90"], par["hipar_p90"]),
+    ("Tempo máximo (s)", par["hiseq_max"], par["hipar_max"]),
+    ("\\textit{Gap} máximo (\\%)", par["hiseq_gap_max"], par["hipar_gap_max"]),
+]
+print(r"\begin{table}[!t] \centering")
+print(r"\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}}lrr@{}}")
+print(r"\toprule")
+print(r"Métrica & Sequencial & Paralelo \\")
+print(r"\midrule")
+print("\n".join(f"{a} & {b} & {c} \\\\" for a, b, c in linhas_par))
+print(r"\bottomrule")
+print(r"\end{tabular*}")
+print(r"\caption{Métricas do braço HiGHS com a busca MIP paralela ligada "
+      r"(\texttt{parallel=on}, 14 \textit{workers}) frente ao braço "
+      r"sequencial, nas 64 instâncias não-triviais completadas nos dois. "
+      r"Mediana, média e p90 por instância; total, máximo e \textit{gap} "
+      r"sobre o conjunto. A instância dura, abortada no braço paralelo, "
+      r"não entra.}")
+print(r" \label{tab-solvers-paralelo}")
+print(r"\end{table}")
+```
+
+A @fig-solvers-paralelo reproduz para os dois braços do HiGHS o recorte por
+porte da @fig-solvers-tempo.
+
+```{python}
+#| label: fig-solvers-paralelo
+#| echo: false
+#| warning: false
+#| fig-width: 3.3
+#| fig-height: 2.6
+#| fig-cap: 'Tempo de resolução por número de grupos da instância (escala log)
+#| nos dois braços do HiGHS: sequencial (quadrados) e com a busca MIP
+#| paralela ligada (triângulos). A instância dura, abortada no braço
+#| paralelo, fica fora do gráfico.'
+
+from matplotlib.lines import Line2D
+
+stats_seq = (nt_seq.groupby(["n_groups"])["tempo_s"]
+               .agg(["mean", "min", "max"]).reset_index())
+stats_hip = (nt_par.groupby(["n_groups"])["tempo_s"]
+               .agg(["mean", "min", "max"]).reset_index())
+fig, ax = plt.subplots()
+marcas_par = {"HiGHS (sequencial)": ("s", "#d62728", stats_seq),
+              "HiGHS (paralelo)": ("^", "#2ca02c", stats_hip)}
+for nome, (marcador, cor, dados) in marcas_par.items():
+    ax.errorbar(dados["n_groups"], dados["mean"],
+                yerr=[dados["mean"] - dados["min"], dados["max"] - dados["mean"]],
+                linestyle="-", marker=marcador, color=cor,
+                markersize=3.5, linewidth=0.9, elinewidth=0.7,
+                capsize=1.5)
+ax.set_yscale("log")
+ax.set_xlabel("grupos da instância ($|G|$)")
+ax.set_ylabel("tempo de resolução (s)")
+legenda_par = [Line2D([], [], color=cor, linestyle="-", marker=marcador,
+                      markersize=3.5, linewidth=0.9, label=nome)
+               for nome, (marcador, cor, _) in marcas_par.items()]
+ax.legend(handles=legenda_par, frameon=False, fontsize=6, loc="upper left")
+plt.tight_layout()
+```
 
 Duas validações estruturais atravessam o benchmark. As `{python} sol["n_fech"]`
 instâncias que o pré-processamento fecha por inspeção reproduzem `closed_cost` à
@@ -700,8 +853,7 @@ precisão numérica (diferença máxima de `{python} ptbr(dif_fechadas, 2)`), o 
 valida o modelo e o pré-processamento contra si; e o ótimo de nenhuma instância
 supera o teto de custo `ub_cost` do pré-processamento. As soluções dos dois
 solvers, por sua vez, podem ser postas lado a lado caminhão a caminhão:
-`{python} sol["sol_cmp"]` Registre-se, por fim, a
-condição de reprodutibilidade: execuções MIP com várias threads não são
-determinísticas (heurísticas dependentes de tempo), de modo que os tempos do
-Gurobi variam entre execuções idênticas — as sementes fixadas reduzem, mas não
-eliminam, a variância.
+`{python} sol["sol_cmp"]` Registre-se, por fim, a condição de reprodutibilidade:
+execuções MIP com várias threads não são determinísticas (heurísticas
+dependentes de tempo), de modo que os tempos do Gurobi variam entre execuções
+idênticas: as sementes fixadas reduzem, mas não eliminam, a variância.

@@ -17,7 +17,7 @@ LB_PER_KG = 0.45359237              # 1 lb em kg
 
 O dataset está commitado no repositório sob `data/raw/` (sete tabelas
 relacionais espelhadas da cópia pública `Eden1029/SQL_SupplyChainLogistics` do
-dataset Kaggle/Figshare @dataset2026 — mesmo esquema e mesmas contagens de
+dataset Kaggle/Figshare @dataset2026, com o mesmo esquema e as mesmas contagens de
 linhas: `OrderList` 9{,}215 × 14, `FreightRates` 1{,}540 × 11). Nenhuma etapa de
 obtenção é necessária; a proveniência está documentada em `notes/DATASETS.md`.
 
@@ -75,7 +75,7 @@ lane_counts
 
 ## Construindo uma instância pequena
 
-A rota maior completa tem milhares de pedidos — além de uma primeira resolução
+A rota maior completa tem milhares de pedidos, além de uma primeira resolução
 exata; tomamos o lote menor da rota real secundária (fatia lane-b.Customer de
 tamanho mediano), com linhas idênticas comprimidas por multiplicidade.
 
@@ -204,7 +204,7 @@ print(f"Gap FFD-vs-exato: {100*(ffdc-obj)/obj:.1f}%   Tensão do LB: {100*obj/lb
 
 # Resultados e discussão (a estender)
 
-A tabela abaixo compara valores de objetivo na instância escolhida — todos já
+A tabela abaixo compara valores de objetivo na instância escolhida, todos já
 com a tarifa completa $\max(R_k\,W,\ f_k)$. Benchmarking mais completo (todos os
 49 lotes rota-b.Customer, um gráfico de barras solver-vs-heurística e o teste de
 ausência de violação do casamento de faixa) é a Fase 2.
@@ -223,7 +223,7 @@ pd.DataFrame({
 Nesta instância há **uma única classe útil** (todas as janelas de `V444_8` têm o
 mesmo `rate` 0,03 e o mesmo `minimum cost` 17,69), de modo que a parcela por
 peso vale $R\,W$ independentemente de como o peso é repartido: o custo é
-**invariante ao número de reservas** e o ótimo fica degenerado — o solver
+**invariante ao número de reservas** e o ótimo fica degenerado: o solver
 devolveu 4 reservas e a FFD devolveu 1, ambas com custo 136,55 e ambas ótimas.
 Quando a parcela por peso domina e as classes usadas compartilham a mesma
 tarifa, quem seleciona o empacotamento é apenas a taxa fixa; reservas

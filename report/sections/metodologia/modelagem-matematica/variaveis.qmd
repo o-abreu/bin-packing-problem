@@ -13,4 +13,4 @@ não é uma segunda decisão: é o indicador de ocupação que as restrições t
 precisam, já que a janela depende de _haver_ carga do grupo no caminhão, e não
 de quantas unidades há. Quando $n_g = 1$, $u_{gj} = z_{gj}$ e a formulação volta
 a ser a versão item a item. Os slots são idênticos antes da escolha do tipo, o
-que cria simetria de permutação — quebrada por R10.
+que cria simetria de permutação, quebrada por R10.

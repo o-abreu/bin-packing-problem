@@ -4,7 +4,7 @@ O custo de uma cadeia de suprimentos é decidido, em boa parte, pela composiçã
 da carga: quantos veículos partem, de que tamanho, e com qual fração de sua
 capacidade ocupada. Consolidar pacotes que seguem a mesma origem e o mesmo
 destino em menos viagens é, por isso, uma das alavancas operacionais mais
-diretas de custo — e uma das mais difíceis, porque o número de planos de
+diretas de custo, e também uma das mais difíceis, porque o número de planos de
 carregamento cresce de forma combinatória com o número de pacotes. A literatura
 de pesquisa operacional trata essa decisão como um problema de otimização
 combinatória: Dzalbs e Kalganova aplicaram colônia de formigas à consolidação de
@@ -18,8 +18,8 @@ Formalmente, o problema do empacotamento em caixas (_bin packing problem_, BPP)
 distribui itens de tamanho $w_i$ em caixas de capacidade $C$, minimizando o
 número de caixas utilizadas. É NP-difícil [@karp1972; @garey1979], de modo que
 não se pode esperar um algoritmo exato polinomial no pior caso. O que a teoria
-oferece são garantias de aproximação — a heurística _first fit decreasing_ (FFD)
-[@johnson1974] nunca usa mais que $11/9$ do ótimo assintoticamente [@dosa2007] —
+oferece são garantias de aproximação, como a heurística _first fit decreasing_ (FFD)
+[@johnson1974] que nunca usa mais que $11/9$ do ótimo assintoticamente [@dosa2007],
 e limites
 inferiores apertados, que dão a régua para medir o quanto uma solução factível
 está longe do ótimo [@martello1990]. Em logística, essa régua é o que distingue
@@ -49,8 +49,8 @@ a programação inteira mista nas instâncias pequenas e heurísticas desenhadas
 para o domínio nas grandes.
 
 A programação inteira mista, por seu turno, cobra um preço próprio. Formulações
-de empacotamento são altamente simétricas — compartimentos são intercambiáveis
-—, e a simetria degrada tanto a relaxação linear quanto o _branch-and-bound_
+de empacotamento são altamente simétricas, pois compartimentos são
+intercambiáveis, e a simetria degrada tanto a relaxação linear quanto o _branch-and-bound_
 [@margot2010; @sherali2001]. A resposta consolidada na literatura é quebrar a
 simetria com restrições e técnicas dedicadas [@ostrowski2011; @kaibel2008], cujo
 efeito prático já foi medido no BPP unidimensional [@salem2020]. Boa parte do esforço de modelagem relatado adiante concentra-se aí.
@@ -64,7 +64,7 @@ caminhão, cada um com área de piso, capacidade de peso e custo por quilômetro
 explícitos. São `{python} base["pacotes"]` pacotes em `{python} base["pedidos"]`
 pedidos e `{python} base["destinos"]` pares origem–destino, com pacotes de
 `{python} base["area_min"]` a `{python} base["area_max"]` m² e de
-`{python} base["peso_min"]` a `{python} base["peso_max"]` kg — nenhum excede o
+`{python} base["peso_min"]` a `{python} base["peso_max"]` kg, e nenhum excede o
 menor caminhão. Trata-se de uma **amostra publicada**, declarada pelos autores
 como "inspirada em um cenário real" de um cliente de manufatura, e não de dados
 brutos da empresa; isso basta para o exercício, mas precisa ser dito.
@@ -74,14 +74,14 @@ caminhão atende várias paradas. Aqui adotamos a política oposta: **viagem
 direta**, uma parada por viagem. Com isso o roteamento degenera no carregamento
 de uma rota, cada par origem–destino vira uma instância independente de VSBPP, e
 o ótimo desse empacotamento passa a ser um **limite superior** para o custo do
-VRP — não o seu ótimo. A escolha é deliberada: isola a decisão de composição de
+VRP, não o seu ótimo. A escolha é deliberada: isola a decisão de composição de
 frota, que é onde a modelagem tem algo a dizer, e deixa o ganho do
 compartilhamento de veículos como uma quantidade explícita a ser medida depois.
 
 Este trabalho persegue, então, quatro objetivos: (i) formular a consolidação de
 carga como um VSBPP bidimensional de custo fixo, declarando e justificando
 conjuntos, parâmetros, variáveis e restrições; (ii) resolvê-lo exatamente em
-instâncias pequenas com dois solvers — um comercial e um de código aberto —,
+instâncias pequenas com dois solvers, um comercial e um de código aberto,
 reportando status, valor da função objetivo, tempo de processamento e _gap_ de
 otimalidade, e discutindo a diferença de desempenho entre eles; (iii)
 implementar um método de solução alternativo (heurística construtiva e, para as

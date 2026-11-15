@@ -39,8 +39,8 @@ tam = {
 }
 ```
 
-Em nosso trabalho, adaptamos o problema proposto pelo artigo de referência — a
-otimização do roteamento de veículos (_Vehicle Routing Problem_, VRP) — impondo
+Em nosso trabalho, adaptamos o problema proposto pelo artigo de referência, a
+otimização do roteamento de veículos (_Vehicle Routing Problem_, VRP), impondo
 um limite ao número de paradas por viagem. No problema original, admite-se que
 um veículo realize várias entregas ao longo do trajeto até o destino, o que
 permite reduzir ao mesmo tempo o número de veículos e a distância total
@@ -59,7 +59,7 @@ vocabulário do domínio: itens são pacotes; caixas são caminhões de quatro t
 (identificados por sua extensão); e as instâncias são rotas $(\text{CD} \to d)$
 em viagem direta, uma para cada um dos `{python} base["destinos"]` destinos.
 
-Como cada pacote consome dois recursos do caminhão — área e carga —, a instância
+Como cada pacote consome dois recursos do caminhão (área e carga), a instância
 é multidimensional [@chekuri2004; @hu2018]. Isso a torna mais difícil que o caso
 unidimensional. Um esquema de aproximação polinomial assintótico (APTAS) é uma
 família de algoritmos que, para todo $\varepsilon > 0$, garante solução a no

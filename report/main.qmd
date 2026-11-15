@@ -12,7 +12,7 @@ abstract: |
   Consolidar pacotes em menos viagens é uma das alavancas de custo mais diretas
   da distribuição física: em uma frota heterogênea, a decisão deixa de ser
   "quantos compartimentos" e passa a ser "quantos caminhões de cada tipo", cada
-  um oferecendo dois recursos escassos — área de piso e peso — a um custo fixo
+  um oferecendo dois recursos escassos (área de piso e peso) a um custo fixo
   por viagem proporcional à distância da rota. Formulamos esse problema como um
   empacotamento em caixas de tamanho e custo variáveis (VSBPP) bidimensional,
   com custo fixo por caminhão, e o instanciamos sobre o conjunto público

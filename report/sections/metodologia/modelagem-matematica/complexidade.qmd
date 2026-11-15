@@ -17,9 +17,9 @@ número de distribuições é
 $$\prod_{g \in G} \binom{n_g + m - 1}{m - 1},$$
 
 que coincide com $m^n$ quando todos os $n_g = 1$ e cai rapidamente quando há
-repetição. O problema em si continua NP-difícil — dividir os pacotes de forma ótima
+repetição. O problema em si continua NP-difícil: dividir os pacotes de forma ótima
 pode ser feito por programação dinâmica sobre os subconjuntos de itens, ao
-custo de $O(3^n)$ operações —, de modo que o ganho do MILP não é assintótico,
+custo de $O(3^n)$ operações, de modo que o ganho do MILP não é assintótico,
 e sim prático: limitantes inferiores e procedimentos de redução (presolve)
 podam a árvore [@martello1990].
 
@@ -33,7 +33,7 @@ As `{python} tam["inst"]` instâncias vão de `{python} tam["n_min"]` a
 `{python} tam["maior_G"]` grupos, `{python} tam["maior_m"]` slots), a formulação
 agregada tem `{python} tam["agg_vars"]` variáveis e `{python} tam["agg_linhas"]`
 linhas; a versão item a item, com o mesmo $m$, teria `{python} tam["item_vars"]`
-variáveis e `{python} tam["item_linhas"]` linhas — sete e onze vezes mais. Sem o
+variáveis e `{python} tam["item_linhas"]` linhas (sete e onze vezes mais). Sem o
 teto de slots ($m = n$), a versão item a item chegaria a
 `{python} tam["itemn_vars"]` variáveis e `{python} tam["itemn_linhas"]` linhas.
 No conjunto, os `{python} base["pacotes"]` pacotes viram
