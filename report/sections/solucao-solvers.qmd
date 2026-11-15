@@ -628,7 +628,7 @@ print("\n".join(f"{a} & {b} & {c} \\\\" for a, b, c in linhas_solvers))
 print(r"\bottomrule")
 print(r"\end{tabular*}")
 print(r"\caption{Métricas do benchmark por solver. Os tempos de média, mediana, "
-      r"p90 e máximo consideram só as 67 instâncias que exigem busca; o tempo "
+      r"p90 e máximo consideram só as instâncias não fechadas por inspeção; o tempo "
       r"total cobre as 111. Gap de otimalidade: diferença relativa entre a "
       r"solução inteira e o limitante dual do solver.}")
 print(r" \label{tab-solvers}")
@@ -643,7 +643,7 @@ print(r"\end{table*}")
 #| warning: false
 #| fig-width: 3.3
 #| fig-height: 2.6
-#| fig-cap: 'Tempo de resolução por número de grupos da instância (escala log), nos dois solvers, para as 67 instâncias que exigem busca — as 44 fechadas por inspeção resolvem em milissegundos e ficam fora do gráfico. Marcador: média das instâncias daquele porte; _whiskers_: mínimo e máximo.'
+#| fig-cap: 'Tempo de resolução por número de grupos da instância (escala log), nos dois solvers — as 44 instâncias fechadas por inspeção resolvem em milissegundos e ficam fora do gráfico. Marcador: média das instâncias daquele porte; _whiskers_: mínimo e máximo.'
 
 from matplotlib.lines import Line2D
 
@@ -663,7 +663,7 @@ ax.set_yscale("log")
 ax.set_xlabel("grupos da instância ($|G|$)")
 ax.set_ylabel("tempo de resolução (s)")
 legenda = [Line2D([], [], color=cor, linestyle="-", marker=marcador,
-                  markersize=3.5, linewidth=0.9, label=f"{nome} — exigem busca")
+                  markersize=3.5, linewidth=0.9, label=nome)
            for nome, (marcador, cor) in marcas.items()]
 ax.legend(handles=legenda, frameon=False, fontsize=6, loc="upper left")
 plt.tight_layout()
